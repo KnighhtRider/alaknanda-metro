@@ -1,0 +1,185 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+//
+// USERS
+//
+model Users {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  createdAt DateTime @default(now())
+}
+
+//
+// MASTER LINES
+//
+model Line {
+  id       Int            @id @default(autoincrement())
+  name     String         @unique
+  color    String?
+
+  stations StationLine[]
+}
+
+//
+// JOIN: STATION <-> LINE
+//
+model StationLine {
+  id        Int      @id @default(autoincrement())
+  stationId Int
+  lineId    Int
+
+  station   Station  @relation(fields: [stationId], references: [id])
+  line      Line     @relation(fields: [lineId], references: [id])
+
+  @@unique([stationId, lineId])
+}
+
+//
+// STATION
+//
+model Station {
+  id             Int              @id @default(autoincrement())
+  name           String
+  description    String?
+  address        String?
+  latitude       Float?
+  longitude      Float?
+  footfall       String?
+  totalInventory Int?
+
+  images         StationImage[]
+  products       StationProduct[]
+  lines          StationLine[]
+
+  audiences      StationAudienceMap[]
+  types          StationTypeMap[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+//
+// MASTER PRODUCTS
+//
+model Product {
+  id               Int               @id @default(autoincrement())
+  name             String            @unique
+  thumbnail        String?
+
+  defaultRateMonth Int?
+  defaultRateDay   Int?
+
+  stations         StationProduct[]
+}
+
+//
+// JOIN: STATION <-> PRODUCT
+//
+model StationProduct {
+  id        Int     @id @default(autoincrement())
+  stationId Int
+  productId Int
+
+  units     Int?
+  rateMonth Int?
+  rateDay   Int?
+
+  station   Station @relation(fields: [stationId], references: [id])
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@unique([stationId, productId])
+}
+
+//
+// STATION IMAGES
+//
+model StationImage {
+  id        Int     @id @default(autoincrement())
+  imageUrl  String
+  stationId Int
+  station   Station @relation(fields: [stationId], references: [id])
+}
+
+//
+// STATION AUDIENCE
+//
+model StationAudience {
+  id       Int                     @id @default(autoincrement())
+  name     String                  @unique
+  stations StationAudienceMap[]
+}
+
+model StationAudienceMap {
+  id          Int      @id @default(autoincrement())
+  stationId   Int
+  audienceId  Int
+
+  station     Station          @relation(fields: [stationId], references: [id])
+  audience    StationAudience  @relation(fields: [audienceId], references: [id])
+
+  @@unique([stationId, audienceId])
+}
+
+//
+// STATION TYPE
+//
+model StationType {
+  id       Int                 @id @default(autoincrement())
+  name     String              @unique
+  stations StationTypeMap[]
+}
+
+model StationTypeMap {
+  id        Int      @id @default(autoincrement())
+  stationId Int
+  typeId    Int
+
+  station   Station      @relation(fields: [stationId], references: [id])
+  type      StationType  @relation(fields: [typeId], references: [id])
+
+  @@unique([stationId, typeId])
+}
+
+//
+// CONTACT US
+//
+model ContactUsSubmission {
+  id            Int      @id @default(autoincrement())
+
+  // core
+  requirement   String   // advertise | inventory
+  buyerType     String?  // brand | agency (nullable for inventory)
+  familiarity   String?  // know | help (nullable for inventory)
+
+  // company & contact
+  companyName   String
+  name          String
+  phone         String
+  email         String
+  notes         String?
+
+  // inventory flow
+  mediaKitName  String?
+  mediaKitSize  Int?
+  mediaKitType  String?
+
+  // aware flow
+  stations      Json?    // ["Rajiv Chowk", "Saket"]
+  adFormat      String?
+  budget        String?
+
+  // advisory flow
+  goal          String?
+  audience      String?
+  timeline      String?
+
+  createdAt     DateTime @default(now())
+}

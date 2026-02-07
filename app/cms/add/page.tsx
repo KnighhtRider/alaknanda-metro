@@ -186,7 +186,7 @@ export default function AddStationPage() {
 
     if (res.ok) {
       alert("Station Added Successfully");
-      window.location.href = "/stations";
+      window.location.href = "/catalogue";
     } else {
       alert("Error while submitting");
     }

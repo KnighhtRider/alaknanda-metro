@@ -6,91 +6,82 @@ const prisma = new PrismaClient();
 export async function POST(req: Request) {
   try {
     const body = await req.json();
+    console.log("Incoming payload:", body);
 
-    // 1. CREATE STATION
     const station = await prisma.station.create({
       data: {
         name: body.name,
-        description: body.description ?? null,
-        address: body.address ?? null,
-        latitude: body.latitude ? parseFloat(body.latitude) : null,
-        longitude: body.longitude ? parseFloat(body.longitude) : null,
-        footfall: body.footfall ?? null,
+        description: body.description || null,
+        address: body.address || null,
+        latitude: body.latitude ? Number(body.latitude) : null,
+        longitude: body.longitude ? Number(body.longitude) : null,
+        footfall: body.footfall ? String(body.footfall) : null,
         totalInventory: body.totalInventory
           ? Number(body.totalInventory)
           : null,
       },
     });
 
-    //
-    // 2. ADD IMAGES
-    //
-    if (Array.isArray(body.images) && body.images.length > 0) {
+    // ✅ Images (correct field name: imageUrl)
+    if (body.images?.length) {
       await prisma.stationImage.createMany({
-        data: body.images
-          .filter((url: string) => url.trim() !== "")
-          .map((url: string) => ({
-            stationId: station.id,
-            imageUrl: url,
-          })),
+        data: body.images.map((img: string) => ({
+          imageUrl: img,
+          stationId: station.id,
+        })),
       });
     }
 
-    //
-    // 3. ADD LINES (StationLine table)
-    //
-    if (Array.isArray(body.lineIds)) {
+    // ✅ Lines
+    if (body.lineIds?.length) {
       await prisma.stationLine.createMany({
         data: body.lineIds.map((lineId: number) => ({
           stationId: station.id,
-          lineId: Number(lineId),
+          lineId,
         })),
-        skipDuplicates: true,
       });
     }
 
-    if (Array.isArray(body.audienceIds)) {
-      await prisma.stationAudience.createMany({
-        data: body.audienceIds.map((audienceId: number) => ({
-          stationId: station.id,
-          audienceId: Number(audienceId),
-        })),
-        skipDuplicates: true,
-      });
-    }
-
-    if (Array.isArray(body.typeIds)) {
-      await prisma.stationType.createMany({
-        data: body.typeIds.map((typeId: number) => ({
-          stationId: station.id,
-          typeId: Number(typeId),
-        })),
-        skipDuplicates: true,
-      });
-    }
-    //
-    // 4. ADD PRODUCTS (StationProduct table)
-    //
-    if (Array.isArray(body.products)) {
-      // body.products = [{ productId, units, rateMonth, rateDay }]
+    // ✅ Products
+    if (body.products?.length) {
       await prisma.stationProduct.createMany({
         data: body.products.map((p: any) => ({
           stationId: station.id,
-          productId: Number(p.productId),
-          units: p.units ? Number(p.units) : null,
-          rateMonth: p.rateMonth ? Number(p.rateMonth) : null,
-          rateDay: p.rateDay ? Number(p.rateDay) : null,
+          productId: p.productId,
+          units: p.units ?? null,
+          rateMonth: p.rateMonth ?? null,
+          rateDay: p.rateDay ?? null,
         })),
-        skipDuplicates: true,
       });
     }
 
+    // ✅ Audiences
+    if (body.audienceIds?.length) {
+      await prisma.stationAudienceMap.createMany({
+        data: body.audienceIds.map((audienceId: number) => ({
+          stationId: station.id,
+          audienceId,
+        })),
+      });
+    }
+
+    // ✅ Types
+    if (body.typeIds?.length) {
+      await prisma.stationTypeMap.createMany({
+        data: body.typeIds.map((typeId: number) => ({
+          stationId: station.id,
+          typeId,
+        })),
+      });
+    }
+
+    return NextResponse.json({ success: true, station });
+  } catch (error: any) {
+    console.error("❌ Station add failed:", error);
+
     return NextResponse.json(
-      { message: "Station created", stationId: station.id },
-      { status: 201 }
+      { success: false, message: error.message },
+      { status: 500 }
     );
-  } catch (err) {
-    console.error("Station Creation Error:", err);
-    return NextResponse.json({ error: "Failed" }, { status: 500 });
   }
 }

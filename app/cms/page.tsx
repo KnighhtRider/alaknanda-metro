@@ -116,20 +116,47 @@ export default function StationsPage() {
   const [lineSearch, setLineSearch] = useState("");
   const [linePage, setLinePage] = useState(1);
 
+
+  const [isAddLineOpen, setIsAddLineOpen] = useState(false);
+  const [newLineName, setNewLineName] = useState("");
+  const [newLineColor, setNewLineColor] = useState("");
+  const [addingLine, setAddingLine] = useState(false);
+
   /* -------- AUDIENCES STATE -------- */
   const [audiences, setAudiences] = useState<any[]>([]);
   const [audienceSearch, setAudienceSearch] = useState("");
   const [audiencePage, setAudiencePage] = useState(1);
+
+  /* -------- ADD AUDIENCE MODAL STATE -------- */
+  const [isAddAudienceOpen, setIsAddAudienceOpen] = useState(false);
+  const [newAudienceName, setNewAudienceName] = useState("");
+  const [addingAudience, setAddingAudience] = useState(false);
+
 
   /* -------- TYPES STATE -------- */
   const [types, setTypes] = useState<any[]>([]);
   const [typeSearch, setTypeSearch] = useState("");
   const [typePage, setTypePage] = useState(1);
 
+  /* -------- ADD TYPE MODAL STATE -------- */
+  const [isAddTypeOpen, setIsAddTypeOpen] = useState(false);
+  const [newTypeName, setNewTypeName] = useState("");
+  const [addingType, setAddingType] = useState(false);
+
+
   /* -------- PRODUCTS STATE -------- */
   const [products, setProducts] = useState<Product[]>([]);
   const [productSearch, setProductSearch] = useState("");
   const [productPage, setProductPage] = useState(1);
+
+
+  /* -------- ADD PRODUCT MODAL STATE -------- */
+  const [isAddProductOpen, setIsAddProductOpen] = useState(false);
+  const [newProductName, setNewProductName] = useState("");
+  const [newProductThumbnail, setNewProductThumbnail] = useState("");
+  const [newProductRateMonth, setNewProductRateMonth] = useState("");
+  const [newProductRateDay, setNewProductRateDay] = useState("");
+  const [addingProduct, setAddingProduct] = useState(false);
 
   const [loading, setLoading] = useState(true);
 
@@ -160,6 +187,203 @@ export default function StationsPage() {
       )
       .finally(() => setLoading(false));
   }, []);
+
+
+  const fetchLines = async () => {
+    const res = await fetch("/api/lines");
+    const data = await res.json();
+    const sorted = [...data].sort((a, b) => a.id - b.id);
+    setLines(sorted);
+  };
+
+  const handleAddLine = async () => {
+    if (!newLineName.trim()) {
+      alert("Line name is required");
+      return;
+    }
+
+    try {
+      setAddingLine(true);
+
+      const res = await fetch("/api/lines", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newLineName.trim(),
+          color: newLineColor || null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to add line");
+        return;
+      }
+
+      setNewLineName("");
+      setNewLineColor("");
+      setIsAddLineOpen(false);
+
+      await fetchLines();
+    } catch (e) {
+      console.error("Add line failed:", e);
+      alert("Something went wrong");
+    } finally {
+      setAddingLine(false);
+    }
+  };
+
+
+  // for products
+
+  const fetchProducts = async () => {
+    const res = await fetch("/api/products");
+    const data = await res.json();
+    const sorted = [...data].sort((a, b) => a.id - b.id);
+    setProducts(sorted);
+  };
+
+
+  const handleAddProduct = async () => {
+    if (!newProductName.trim()) {
+      alert("Product name is required");
+      return;
+    }
+
+    try {
+      setAddingProduct(true);
+
+      const res = await fetch("/api/products", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newProductName.trim(),
+          thumbnail: newProductThumbnail || null,
+          defaultRateMonth: newProductRateMonth
+            ? Number(newProductRateMonth)
+            : null,
+          defaultRateDay: newProductRateDay
+            ? Number(newProductRateDay)
+            : null,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to add product");
+        return;
+      }
+
+      // Reset + close
+      setNewProductName("");
+      setNewProductThumbnail("");
+      setNewProductRateMonth("");
+      setNewProductRateDay("");
+      setIsAddProductOpen(false);
+
+      await fetchProducts();
+    } catch (e) {
+      console.error("Add product failed:", e);
+      alert("Something went wrong");
+    } finally {
+      setAddingProduct(false);
+    }
+  };
+
+
+
+  // For Station Audience
+
+  const fetchAudiences = async () => {
+    const res = await fetch("/api/stations/audiences");
+    const data = await res.json();
+    setAudiences(data);
+  };
+
+
+  const handleAddAudience = async () => {
+    if (!newAudienceName.trim()) {
+      alert("Audience name is required");
+      return;
+    }
+
+    try {
+      setAddingAudience(true);
+
+      const res = await fetch("/api/stations/audiences", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newAudienceName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to add audience");
+        return;
+      }
+
+      setNewAudienceName("");
+      setIsAddAudienceOpen(false);
+
+      await fetchAudiences();
+    } catch (e) {
+      console.error("Add audience failed:", e);
+      alert("Something went wrong");
+    } finally {
+      setAddingAudience(false);
+    }
+  };
+
+  // For Station Type 
+
+  const fetchTypes = async () => {
+    const res = await fetch("/api/stations/types");
+    const data = await res.json();
+    setTypes(data);
+  };
+
+  const handleAddType = async () => {
+    if (!newTypeName.trim()) {
+      alert("Type name is required");
+      return;
+    }
+
+    try {
+      setAddingType(true);
+
+      const res = await fetch("/api/stations/types", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newTypeName.trim(),
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        alert(data.message || "Failed to add type");
+        return;
+      }
+
+      setNewTypeName("");
+      setIsAddTypeOpen(false);
+
+      await fetchTypes();
+    } catch (e) {
+      console.error("Add type failed:", e);
+      alert("Something went wrong");
+    } finally {
+      setAddingType(false);
+    }
+  };
+
+
 
   /* ---------------- STATION FILTERING ---------------- */
 
@@ -233,16 +457,16 @@ export default function StationsPage() {
   const filteredAudiences = useMemo(() => {
     return audienceSearch
       ? audiences.filter((a) =>
-          a.name.toLowerCase().includes(audienceSearch.toLowerCase())
-        )
+        a.name.toLowerCase().includes(audienceSearch.toLowerCase())
+      )
       : audiences;
   }, [audiences, audienceSearch]);
 
   const filteredTypes = useMemo(() => {
     return typeSearch
       ? types.filter((t) =>
-          t.name.toLowerCase().includes(typeSearch.toLowerCase())
-        )
+        t.name.toLowerCase().includes(typeSearch.toLowerCase())
+      )
       : types;
   }, [types, typeSearch]);
 
@@ -489,11 +713,13 @@ export default function StationsPage() {
               }}
             />
 
-            <Link href="/cms/addLines">
-              <Button color="primary" endContent={<PlusIcon />}>
-                Add Line
-              </Button>
-            </Link>
+            <Button
+              color="primary"
+              endContent={<PlusIcon />}
+              onClick={() => setIsAddLineOpen(true)}
+            >
+              Add Line
+            </Button>
           </div>
 
           <Table
@@ -540,11 +766,13 @@ export default function StationsPage() {
               }}
             />
 
-            <Link href="/cms/addProduct">
-              <Button color="primary" endContent={<PlusIcon />}>
-                Add Product
-              </Button>
-            </Link>
+            <Button
+              color="primary"
+              endContent={<PlusIcon />}
+              onClick={() => setIsAddProductOpen(true)}
+            >
+              Add Product
+            </Button>
           </div>
 
           <Table
@@ -594,11 +822,13 @@ export default function StationsPage() {
               }}
             />
 
-            <Link href="/cms/addAudience">
-              <Button color="primary" endContent={<PlusIcon />}>
-                Add Audience
-              </Button>
-            </Link>
+            <Button
+              color="primary"
+              endContent={<PlusIcon />}
+              onClick={() => setIsAddAudienceOpen(true)}
+            >
+              Add Audience
+            </Button>
           </div>
 
           <Table
@@ -648,11 +878,13 @@ export default function StationsPage() {
               }}
             />
 
-            <Link href="/cms/addType">
-              <Button color="primary" endContent={<PlusIcon />}>
-                Add Type
-              </Button>
-            </Link>
+            <Button
+              color="primary"
+              endContent={<PlusIcon />}
+              onClick={() => setIsAddTypeOpen(true)}
+            >
+              Add Type
+            </Button>
           </div>
 
           <Table
@@ -687,6 +919,188 @@ export default function StationsPage() {
           </Table>
         </Tab>
       </Tabs>
+
+      {isAddLineOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[420px]">
+            <h2 className="text-lg font-semibold mb-4">Add New Line</h2>
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Line Name *</label>
+              <input
+                value={newLineName}
+                onChange={(e) => setNewLineName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Enter line name"
+              />
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">
+                Color (optional)
+              </label>
+              <input
+                value={newLineColor}
+                onChange={(e) => setNewLineColor(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="#00FF00 or green"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="light" onClick={() => setIsAddLineOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                isLoading={addingLine}
+                onClick={handleAddLine}
+              >
+                Add Line
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* ---------------- PRODUCTS MODAL ----------------*/}
+
+      {isAddProductOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[460px]">
+            <h2 className="text-lg font-semibold mb-4">Add New Product</h2>
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">Product Name *</label>
+              <input
+                value={newProductName}
+                onChange={(e) => setNewProductName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="Enter product name"
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">
+                Thumbnail URL (optional)
+              </label>
+              <input
+                value={newProductThumbnail}
+                onChange={(e) => setNewProductThumbnail(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="https://..."
+              />
+            </div>
+
+            <div className="mb-3">
+              <label className="block text-sm font-medium mb-1">
+                Rate / Month (₹)
+              </label>
+              <input
+                type="number"
+                value={newProductRateMonth}
+                onChange={(e) => setNewProductRateMonth(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="45000"
+              />
+            </div>
+
+            <div className="mb-5">
+              <label className="block text-sm font-medium mb-1">
+                Rate / Day (₹)
+              </label>
+              <input
+                type="number"
+                value={newProductRateDay}
+                onChange={(e) => setNewProductRateDay(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="1500"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="light" onClick={() => setIsAddProductOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                isLoading={addingProduct}
+                onClick={handleAddProduct}
+              >
+                Add Product
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
+      {/* Station Audience */}
+
+      {isAddAudienceOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[420px]">
+            <h2 className="text-lg font-semibold mb-4">Add New Audience</h2>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Audience Name *</label>
+              <input
+                value={newAudienceName}
+                onChange={(e) => setNewAudienceName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="e.g. Students, Business, Shoppers"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="light" onClick={() => setIsAddAudienceOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                isLoading={addingAudience}
+                onClick={handleAddAudience}
+              >
+                Add Audience
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isAddTypeOpen && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-[420px]">
+            <h2 className="text-lg font-semibold mb-4">Add New Station Type</h2>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium mb-1">Type Name *</label>
+              <input
+                value={newTypeName}
+                onChange={(e) => setNewTypeName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder="e.g. Interchange, Terminal, Underground"
+              />
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button variant="light" onClick={() => setIsAddTypeOpen(false)}>
+                Cancel
+              </Button>
+              <Button
+                color="primary"
+                isLoading={addingType}
+                onClick={handleAddType}
+              >
+                Add Type
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </div>
   );
 }

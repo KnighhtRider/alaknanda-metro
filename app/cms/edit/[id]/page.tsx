@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useParams } from "next/navigation";
 import {
   Dropdown,
   DropdownTrigger,
@@ -57,7 +58,10 @@ interface FormData {
   products: StationProductInput[];
 }
 
-export default function AddStationPage() {
+export default function EditStationPage() {
+  const params = useParams();
+  const stationId = params?.id as string;
+
   const [lines, setLines] = useState<Line[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [audiences, setAudiences] = useState<StationAudience[]>([]);
@@ -84,26 +88,48 @@ export default function AddStationPage() {
   useEffect(() => {
     async function fetchData() {
       try {
-        const [linesData, productsData, audiencesData, typesData] = await Promise.all([
+        const [linesData, productsData, audiencesData, typesData, stationData] = await Promise.all([
           fetch("/api/lines").then((r) => r.json()),
           fetch("/api/products").then((r) => r.json()),
           fetch("/api/stations/audiences").then((r) => r.json()),
           fetch("/api/stations/types").then((r) => r.json()),
+          fetch(`/api/stations/${stationId}`).then((r) => r.json()),
         ]);
 
         setLines(linesData);
         setProducts(productsData);
         setAudiences(audiencesData);
         setTypes(typesData);
+
+        // Pre-fill form with existing station data
+        setForm({
+          name: stationData.name || "",
+          description: stationData.description || "",
+          address: stationData.address || "",
+          latitude: stationData.latitude?.toString() || "",
+          longitude: stationData.longitude?.toString() || "",
+          footfall: stationData.footfall?.toString() || "",
+          totalInventory: stationData.totalInventory?.toString() || "",
+          images: stationData.images && stationData.images.length > 0 ? stationData.images : [""],
+          lineIds: stationData.lines?.map((l: any) => l.id) || [],
+          audienceIds: stationData.audiences?.map((a: any) => a.id) || [],
+          typeIds: stationData.types?.map((t: any) => t.id) || [],
+          products: stationData.products?.map((p: any) => ({
+            productId: p.productId || p.id,
+            units: p.units || 0,
+            rateMonth: p.rateMonth || p.defaultRateMonth || 0,
+            rateDay: p.rateDay || p.defaultRateDay || 0,
+          })) || [],
+        });
       } catch (error) {
         console.error("Failed to fetch data:", error);
-        alert("Failed to load form data. Please refresh the page.");
+        alert("Failed to load station data. Please try again.");
       } finally {
         setLoading(false);
       }
     }
     fetchData();
-  }, []);
+  }, [stationId]);
 
   const updateField = useCallback((field: keyof FormData, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -199,7 +225,6 @@ export default function AddStationPage() {
     if (form.typeIds.length === 0) newErrors.types = "Select at least one station type";
     if (form.products.length === 0) newErrors.products = "Select at least one product";
 
-    // Validate product units
     const hasInvalidUnits = form.products.some((p) => p.units <= 0);
     if (hasInvalidUnits) {
       newErrors.products = "All selected products must have units greater than 0";
@@ -218,10 +243,10 @@ export default function AddStationPage() {
     setSubmitting(true);
 
     try {
-      // Calculate total inventory as sum of all selected product units
       const totalInventory = form.products.reduce((sum, p) => sum + (Number(p.units) || 0), 0);
 
       const payload = {
+        id: parseInt(stationId),
         name: form.name.trim(),
         description: form.description.trim(),
         address: form.address.trim(),
@@ -236,23 +261,32 @@ export default function AddStationPage() {
         products: form.products,
       };
 
-      const res = await fetch("/api/stations/add", {
+      const res = await fetch(`/api/stations/edit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
-      const data = await res.json();
-
-      if (res.ok) {
-        alert("Station added successfully!");
-        window.location.href = "/catalogue";
-      } else {
-        alert(data.message || "Failed to add station");
+      if (!res.ok) {
+        // Try to parse error message
+        let errorMessage = "Failed to update station";
+        try {
+          const data = await res.json();
+          errorMessage = data.message || errorMessage;
+        } catch (e) {
+          // If JSON parsing fails, use status text
+          errorMessage = `Error ${res.status}: ${res.statusText}`;
+        }
+        alert(errorMessage);
+        return;
       }
+
+      const data = await res.json();
+      alert("Station updated successfully!");
+      window.location.href = "/catalogue";
     } catch (error) {
       console.error("Submit error:", error);
-      alert("An error occurred while submitting. Please try again.");
+      alert("An error occurred while updating. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -268,7 +302,7 @@ export default function AddStationPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-8">
-      <h1 className="text-3xl font-bold mb-8">Add New Station</h1>
+      <h1 className="text-3xl font-bold mb-8">Edit Station</h1>
 
       <div className="space-y-6">
         {/* Station Name */}
@@ -590,7 +624,7 @@ export default function AddStationPage() {
             isLoading={submitting}
             className="px-8"
           >
-            {submitting ? "Adding Station..." : "Add Station"}
+            {submitting ? "Updating Station..." : "Update Station"}
           </Button>
           <Button
             variant="bordered"

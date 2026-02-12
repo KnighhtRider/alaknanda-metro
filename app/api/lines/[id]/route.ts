@@ -1,15 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+/* ---------------- PUT ---------------- */
+
+export async function PUT(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = Number(params.id);
-    const body = await req.json();
+    const { id } = await params; // ✅ await params
+    const numericId = Number(id);
+
+    const body = await request.json();
 
     const line = await prisma.line.update({
-      where: { id },
+      where: { id: numericId },
       data: {
         name: body.name,
         color: body.color || null,
@@ -17,20 +24,29 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     });
 
     return NextResponse.json({ success: true, line });
-  } catch (e) {
-    console.error("Update line failed:", e);
+  } catch (error) {
+    console.error("Update line failed:", error);
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
-  try {
-    const id = Number(params.id);
+/* ---------------- DELETE ---------------- */
 
-    await prisma.line.delete({ where: { id } });
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params; // ✅ await params
+    const numericId = Number(id);
+
+    await prisma.line.delete({
+      where: { id: numericId },
+    });
+
     return NextResponse.json({ success: true });
-  } catch (e) {
-    console.error("Delete line failed:", e);
+  } catch (error) {
+    console.error("Delete line failed:", error);
     return NextResponse.json({ success: false }, { status: 500 });
   }
 }

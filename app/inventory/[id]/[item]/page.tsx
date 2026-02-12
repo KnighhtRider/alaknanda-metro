@@ -1,19 +1,9 @@
 'use client'
-import Image from "next/image";
 import Link from "next/link";
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import { useParams, useRouter } from 'next/navigation';
 
-/**
- * Ad Option Detail Page (e.g., Backlit Panels)
- * - Opens after user clicks an ad format on the Station page.
- * - BIG swipeable image gallery below the title (native scroll-snap carousel).
- * - Removed Installed Examples and Indicative Layout.
- * - Specs & Guidelines are collapsible (droppable).
- * - Sticky enquiry form + "Confused? Get Free Consultation" box.
- *
- * NOTE: Plain JS (no TS types) to avoid TSX parse errors.
- */
-// --- Small utilities (also used in tests) ---
+// --- Utilities ---
 function _clampIndex(i: number, len: number) {
   return Math.max(0, Math.min(i, len - 1));
 }
@@ -22,10 +12,7 @@ function _ensureArray(x: string | number[] | string[] | undefined) {
   return Array.isArray(x) ? x : x ? [x] : [];
 }
 
-// Native swipe Carousel (no external library)
-// - full-width slides
-// - CSS scroll-snap + smooth scrolling
-// - arrows + dots
+// Native swipe Carousel
 function Carousel({ images, onOpen }: { images: string[]; onOpen: (src: string) => void }) {
   const trackRef = useRef<HTMLDivElement | null>(null);
   const [index, setIndex] = useState<number>(0);
@@ -113,35 +100,78 @@ function Carousel({ images, onOpen }: { images: string[]; onOpen: (src: string) 
 }
 
 export default function AdOptionDetail() {
-  // Mock data — replace from router params or API
+  const params = useParams();
+  const router = useRouter();
+  
+  const stationId = Number(params.id);
+  const productId = Number(params.item);
+
+  const [station, setStation] = useState<any>(null);
+  const [product, setProduct] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const res = await fetch(`/api/stations/${stationId}`);
+        const stationData = await res.json();
+        setStation(stationData);
+
+        // Find the specific product
+        const selectedProduct = stationData.products?.find((p: any) => p.id === productId);
+        setProduct(selectedProduct);
+      } catch (err) {
+        console.error("Failed to fetch data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (stationId && productId) {
+      fetchData();
+    }
+  }, [stationId, productId]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-gray-600">
+        Loading inventory details...
+      </div>
+    );
+  }
+
+  if (!station || !product) {
+    return (
+      <div className="flex justify-center items-center min-h-screen text-gray-600">
+        Inventory not found
+      </div>
+    );
+  }
+
+  // Build ad data from fetched station and product
   const ad = {
-    id: "backlit",
-    type: "Backlit Panels",
+    id: product.id,
+    type: product.name,
     station: {
-      id: 1,
-      name: "Rajiv Chowk Metro Station",
-      line: "Yellow Line",
-      lineColorClass: "bg-yellow-400",
+      id: station.id,
+      name: station.name,
+      line: station.lines?.[0] || "Metro Line",
+      lineColorClass: "bg-yellow-400", // You can map this from station.lines
       tags: ["Popular", "High Footfall"],
-      footfall: "~5,20,000 riders/day",
+      footfall: station.footfall || "High footfall",
     },
     summary: {
-      totalUnits: 50,
-      startingDay: 1500,
-      startingMonth: 45000,
+      totalUnits: product.units || 0,
+      startingDay: product.rateDay || product.defaultRateDay || 0,
+      startingMonth: product.rateMonth || (product.rateDay || product.defaultRateDay || 0) * 30,
     },
-    // Large visual gallery (hero-size thumbnails)
-    gallery: [
-      "https://source.unsplash.com/1600x900/?backlit,advertising,station",
-      "https://source.unsplash.com/1600x900/?backlit,panel,metro",
-      "https://source.unsplash.com/1600x900/?transit,advertising,lightbox",
-      "https://source.unsplash.com/1600x900/?metro,platform,ad",
-    ],
+    gallery: station.images?.map((img: any) => img.imageUrl) || [product.thumbnail],
     specs: {
-      typicalSizes: ["6x3 ft", "8x4 ft", "10x4 ft"],
-      illumination: "LED backlit",
-      finish: "Vinyl print on acrylic/ACP frame",
-      locations: ["Concourse", "Corridors", "Entry/Exit"],
+      typicalSizes: product.sizes || ["6x3 ft", "8x4 ft", "10x4 ft"],
+      illumination: product.illumination || "LED backlit",
+      finish: product.finish || "Vinyl print on acrylic/ACP frame",
+      locations: product.locations || ["Concourse", "Corridors", "Entry/Exit"],
     },
     guidelines: {
       notes: [
@@ -150,7 +180,6 @@ export default function AdOptionDetail() {
         "Installation follows DMRC safety protocols",
         "Typical execution timeline: 7 days (faster possible)"
       ],
-      // artwork/install/turnaround intentionally omitted; rendering handles absence safely
       artwork: undefined,
       install: undefined,
       turnaround: undefined,
@@ -163,13 +192,10 @@ export default function AdOptionDetail() {
     ],
   };
 
-  // Simple lightbox state for gallery
-  const [lightbox, setLightbox] = useState<string | null>(null);
-
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Header (simple) */}
-      <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
+      {/* Header */}
+      {/* <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold">AAL</div>
@@ -177,7 +203,7 @@ export default function AdOptionDetail() {
           </div>
           <div className="hidden md:block text-sm text-gray-600">Questions? <a href="/contact" className="text-red-600">Get Free Consultation</a></div>
         </div>
-      </header>
+      </header> */}
 
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-6 pt-6 text-sm text-gray-500">
@@ -214,7 +240,7 @@ export default function AdOptionDetail() {
             </div>
           </div>
 
-          {/* BIG Image Gallery — native swipe carousel */}
+          {/* Image Gallery */}
           <div className="mt-6 bg-white rounded-2xl shadow-sm p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">Gallery</h3>
@@ -275,11 +301,11 @@ export default function AdOptionDetail() {
                 <input required placeholder="Phone" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
                 <textarea placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
                 <button type="submit" className="w-full bg-red-600 text-white rounded-lg py-3 font-medium">Request Quote</button>
-                <p className="text-xs text-gray-500 mt-4">We’ll share the detailed inventory PDF and rates on email.</p>
+                <p className="text-xs text-gray-500 mt-4">We willl share the detailed inventory PDF and rates on email.</p>
               </form>
             </div>
 
-            <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-2xl shadow-sm p-5 cursor-pointer hover:bg-yellow-100 transition" onClick={() => (window.location.href = '/contact')}>
+            <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-2xl shadow-sm p-5 cursor-pointer hover:bg-yellow-100 transition" onClick={() => router.push('/contact')}>
               <h4 className="font-semibold text-lg mb-1">Confused?</h4>
               <p className="text-sm text-gray-700 mb-2">Get a free consultation. Our specialists will plan the best placements for your goals and budget.</p>
               <button className="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-yellow-600">Get Free Consultation</button>
@@ -300,18 +326,16 @@ export default function AdOptionDetail() {
   );
 }
 
-// --- Lightweight test cases (do not modify existing UI) ---
+// --- Tests ---
 try {
   console.assert(_clampIndex(-1, 5) === 0, "_clampIndex should clamp low bound to 0");
   console.assert(_clampIndex(0, 5) === 0, "_clampIndex should allow 0");
   console.assert(_clampIndex(4, 5) === 4, "_clampIndex should allow max-1");
   console.assert(_clampIndex(10, 5) === 4, "_clampIndex should clamp high bound to len-1");
-  // new tests for _ensureArray
   console.assert(Array.isArray(_ensureArray(undefined)), "_ensureArray should return array for undefined");
   console.assert(_ensureArray(undefined).length === 0, "_ensureArray(undefined) should be empty array");
   console.assert(_ensureArray("a")[0] === "a", "_ensureArray should wrap non-array value in array");
   console.assert(JSON.stringify(_ensureArray([1,2])) === JSON.stringify([1,2]), "_ensureArray should return arrays as-is");
 } catch (e) {
-  // Non-fatal in production; useful during dev
   console.warn("Self-tests failed:", e);
 }

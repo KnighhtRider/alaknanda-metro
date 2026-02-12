@@ -31,6 +31,17 @@ import Link from "next/link";
 
 /* ---------------- TYPES ---------------- */
 
+interface Lead {
+  id: number;
+  companyName: string;
+  name: string;
+  email: string;
+  phone: string;
+  requirement: string;
+  status: string;
+  createdAt: string;
+}
+
 interface Station {
   id: number;
   name: string;
@@ -95,6 +106,17 @@ const simpleColumns = [
   { name: "ACTIONS", uid: "actions" },
 ];
 
+const leadColumns = [
+  { name: "ID", uid: "id" },
+  { name: "COMPANY", uid: "companyName" },
+  { name: "NAME", uid: "name" },
+  { name: "EMAIL", uid: "email" },
+  { name: "PHONE", uid: "phone" },
+  { name: "REQUIREMENT", uid: "requirement" },
+  { name: "STATUS", uid: "status" },
+  { name: "CREATED AT", uid: "createdAt" },
+];
+
 /* ---------------- COLORS ---------------- */
 
 const lineColorMap: Record<string, any> = {
@@ -155,6 +177,12 @@ export default function StationsPage() {
   const [productSearch, setProductSearch] = useState("");
   const [productPage, setProductPage] = useState(1);
 
+  /* -------- LEADS STATE -------- */
+const [leads, setLeads] = useState<Lead[]>([]);
+const [leadSearch, setLeadSearch] = useState("");
+const [leadPage, setLeadPage] = useState(1);
+
+
   /* -------- ADD/EDIT PRODUCT MODAL STATE -------- */
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
@@ -202,6 +230,47 @@ export default function StationsPage() {
     setStations(data);
   }, []);
 
+  const fetchLeads = useCallback(async () => {
+    const res = await fetch("/api/leads");
+    const data = await res.json();
+    setLeads(data);
+  }, []);
+
+  const handleExportStations = async () => {
+    const res = await fetch("/api/stations/export");
+    const blob = await res.blob();
+  
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "stations.xlsx";
+    a.click();
+  };
+
+  const handleImportStations = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+  
+    const formData = new FormData();
+    formData.append("file", file);
+  
+    const res = await fetch("/api/stations/import", {
+      method: "POST",
+      body: formData,
+    });
+  
+    if (res.ok) {
+      alert("Stations imported successfully");
+      fetchStations(); // refresh table
+    } else {
+      alert("Import failed");
+    }
+  };
+  
+  
+
   useEffect(() => {
     Promise.all([
       fetch("/api/stations").then((res) => res.json()),
@@ -209,8 +278,9 @@ export default function StationsPage() {
       fetch("/api/products").then((res) => res.json()),
       fetch("/api/stations/audiences").then((res) => res.json()),
       fetch("/api/stations/types").then((res) => res.json()),
+      fetch("/api/leads").then((res) => res.json()),
     ])
-      .then(([stationsData, linesData, productsData, audiencesData, typesData]) => {
+    .then(([stationsData, linesData, productsData, audiencesData, typesData, leadsData]) => {
         const sortedLines = [...linesData].sort((a, b) => a.id - b.id);
         const sortedProducts = [...productsData].sort((a, b) => a.id - b.id);
         setStations(stationsData);
@@ -219,6 +289,7 @@ export default function StationsPage() {
         setSelectedLines(new Set(sortedLines.map((l) => l.name)));
         setAudiences(audiencesData);
         setTypes(typesData);
+        setLeads(leadsData);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -557,6 +628,16 @@ export default function StationsPage() {
     return types.filter((t) => t.name.toLowerCase().includes(typeSearch.toLowerCase()));
   }, [types, typeSearch]);
 
+
+  const filteredLeads = useMemo(() => {
+    return leads.filter(
+      (l) =>
+        l.name.toLowerCase().includes(leadSearch.toLowerCase()) ||
+        l.companyName.toLowerCase().includes(leadSearch.toLowerCase()) ||
+        l.email.toLowerCase().includes(leadSearch.toLowerCase())
+    );
+  }, [leads, leadSearch]);
+
   /* ---------------- RENDER CELLS ---------------- */
 
   const renderStationCell = useCallback((station: Station, columnKey: string) => {
@@ -748,6 +829,50 @@ export default function StationsPage() {
     []
   );
 
+
+  const renderLeadCell = useCallback((lead: Lead, columnKey: string) => {
+    switch (columnKey) {
+      case "id":
+        return lead.id;
+      case "companyName":
+        return lead.companyName;
+      case "name":
+        return lead.name;
+      case "email":
+        return lead.email;
+      case "phone":
+        return lead.phone;
+      case "requirement":
+        return (
+          <Chip size="sm" color={lead.requirement === "inventory" ? "success" : "primary"}>
+            {lead.requirement}
+          </Chip>
+        );
+      case "status":
+        return (
+          <Chip
+            size="sm"
+            color={
+              lead.status === "NEW"
+                ? "warning"
+                : lead.status === "CONTACTED"
+                ? "primary"
+                : lead.status === "CLOSED"
+                ? "success"
+                : "default"
+            }
+          >
+            {lead.status}
+          </Chip>
+        );
+      case "createdAt":
+        return new Date(lead.createdAt).toLocaleDateString();
+      default:
+        return null;
+    }
+  }, []);
+  
+
   /* ---------------- RENDER ---------------- */
 
   if (loading) {
@@ -775,7 +900,7 @@ export default function StationsPage() {
                 setStationPage(1);
               }}
             />
-            <div className="flex gap-2">
+            <div className="flex gap-2 items-center">
               <Dropdown>
                 <DropdownTrigger>
                   <Button endContent={<ChevronDownIcon />} variant="flat">
@@ -798,6 +923,44 @@ export default function StationsPage() {
                   ))}
                 </DropdownMenu>
               </Dropdown>
+                
+              <Button variant="flat" onClick={handleExportStations}>
+  Export Excel
+</Button>
+
+<Button
+color="secondary"
+onClick={() => document.getElementById("excelUpload")?.click()}
+>
+Import Excel
+</Button>
+
+<input
+id="excelUpload"
+type="file"
+accept=".xlsx, .xls"
+hidden
+onChange={async (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/stations/import", {
+    method: "POST",
+    body: formData,
+  });
+
+  const data = await res.json();
+  alert(
+    `Inserted: ${data.inserted}\nSkipped: ${data.skipped}`
+  );
+
+  window.location.reload();
+}}
+/>
+
               <Link href="/cms/add">
                 <Button color="primary" endContent={<PlusIcon />}>
                   Add Station
@@ -1028,6 +1191,54 @@ export default function StationsPage() {
             </TableBody>
           </Table>
         </Tab>
+
+        <Tab key="leads" title="Leads">
+  <div className="flex justify-between mt-6 mb-4">
+    <Input
+      isClearable
+      className="w-1/3"
+      placeholder="Search leads..."
+      startContent={<SearchIcon />}
+      value={leadSearch}
+      onValueChange={(v) => {
+        setLeadSearch(v ?? "");
+        setLeadPage(1);
+      }}
+    />
+  </div>
+
+  <Table
+    isStriped
+    bottomContent={
+      <Pagination
+        page={leadPage}
+        total={Math.ceil(filteredLeads.length / rowsPerPage)}
+        onChange={setLeadPage}
+        showControls
+      />
+    }
+  >
+    <TableHeader columns={leadColumns}>
+      {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+    </TableHeader>
+    <TableBody
+      items={filteredLeads.slice(
+        (leadPage - 1) * rowsPerPage,
+        leadPage * rowsPerPage
+      )}
+    >
+      {(item) => (
+        <TableRow key={item.id}>
+          {(columnKey) => (
+            <TableCell>{renderLeadCell(item, columnKey as string)}</TableCell>
+          )}
+        </TableRow>
+      )}
+    </TableBody>
+  </Table>
+</Tab>
+
+
       </Tabs>
 
       {/* ---------------- LINE MODAL ---------------- */}

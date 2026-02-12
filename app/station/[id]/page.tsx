@@ -1,10 +1,11 @@
 'use client'
 import React, { useEffect, useState } from "react";
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
 
 export default function StationDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
   const stationId = rawId ? parseInt(rawId, 10) : NaN;
 
@@ -16,7 +17,7 @@ export default function StationDetailPage() {
       try {
         const res = await fetch(`/api/stations/${stationId}`);
         const data = await res.json();
-        console.log("station",data)
+        console.log("station", data);
         setStation(data);
       } catch (err) {
         console.error("Failed to fetch station", err);
@@ -26,6 +27,10 @@ export default function StationDetailPage() {
     };
     if (stationId) fetchStation();
   }, [stationId]);
+
+  const handleProductClick = (productId: number) => {
+    router.push(`/inventory/${stationId}/${productId}`);
+  };
 
   if (loading)
     return (
@@ -91,8 +96,8 @@ export default function StationDetailPage() {
                   key={p.id}
                   role="button"
                   tabIndex={0}
-                  onClick={() => (window.location.href = `/inventory/${p.id}`)}
-                  onKeyDown={(e) => { if (e.key === 'Enter') window.location.href = `/inventory/${p.id}` }}
+                  onClick={() => handleProductClick(p.id)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') handleProductClick(p.id) }}
                   className="bg-white rounded-xl overflow-hidden transform transition duration-200 hover:scale-105 hover:shadow-xl cursor-pointer focus:outline-none"
                 >
                   <img
@@ -116,7 +121,7 @@ export default function StationDetailPage() {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          window.location.href = `/inventory/${p.id}`;
+                          handleProductClick(p.id);
                         }}
                         className="w-full bg-red-600 text-white rounded-lg px-3 py-2 text-sm"
                       >
@@ -150,7 +155,7 @@ export default function StationDetailPage() {
           </div>
         </section>
 
-        {/* Sidebar (unchanged) */}
+        {/* Sidebar */}
         <aside className="col-span-12 lg:col-span-4">
           <div className="sticky top-24 space-y-4">
             <div className="bg-white rounded-2xl border border-gray-200 shadow-md p-6">

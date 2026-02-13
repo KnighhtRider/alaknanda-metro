@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// ✅ Singleton Prisma client for Vercel
+const prisma = globalThis.prisma || new PrismaClient();
+if (!globalThis.prisma) globalThis.prisma = prisma;
 
 // ✅ UPDATE STATION TYPE
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } } // ❌ removed Promise<>
 ) {
   try {
-    const { id } = await params;
-    const numericId = Number(id);
+    const numericId = Number(params.id);
 
     if (isNaN(numericId)) {
       return NextResponse.json(
@@ -41,11 +42,10 @@ export async function PUT(
 // ✅ DELETE STATION TYPE
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } } // ❌ removed Promise<>
 ) {
   try {
-    const { id } = await params;
-    const numericId = Number(id);
+    const numericId = Number(params.id);
 
     if (isNaN(numericId)) {
       return NextResponse.json(

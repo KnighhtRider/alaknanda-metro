@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-// ✅ Use a singleton Prisma client for Vercel serverless
-const prisma = globalThis.prisma || new PrismaClient();
-if (!globalThis.prisma) globalThis.prisma = prisma;
+const prisma = new PrismaClient();
 
 // ✅ UPDATE LINE
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } } // ❌ removed Promise<>
+  { params }: { params: { id: string } } // fix here
 ) {
   try {
     const numericId = Number(params.id);
@@ -43,7 +41,7 @@ export async function PUT(
 // ✅ DELETE LINE
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } } // ❌ removed Promise<>
+  { params }: { params: { id: string } } // fix here too
 ) {
   try {
     const numericId = Number(params.id);

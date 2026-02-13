@@ -1,45 +1,29 @@
+// app/api/stations/route.ts
 import { NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+// ✅ Singleton Prisma client for serverless
+declare global {
+  var prisma: PrismaClient | undefined;
+}
+const prisma: PrismaClient = global.prisma || new PrismaClient();
+if (process.env.NODE_ENV !== "production") global.prisma = prisma;
 
 export async function GET() {
-  const stations = await prisma.station.findMany({
-    include: {
-      images: true,
-
-      // Lines (join → master)
-      lines: {
-        include: {
-          line: true,
-        },
+  try {
+    const stations = await prisma.station.findMany({
+      include: {
+        images: true,
+        lines: { include: { line: true } },
+        products: { include: { product: true } },
+        audiences: { include: { audience: true } },
+        types: { include: { type: true } },
       },
+      orderBy: { id: "asc" },
+    });
 
-      // Products (join → master)
-      products: {
-        include: {
-          product: true,
-        },
-      },
-
-      // Audiences (join → master)
-      audiences: {
-        include: {
-          audience: true,
-        },
-      },
-
-      // Types (join → master)
-      types: {
-        include: {
-          type: true,
-        },
-      },
-    },
-  });
-
-  return NextResponse.json(
-    stations.map((s: any) => ({
+    // Flatten and structure data for frontend
+    const response = stations.map((s: any) => ({
       id: s.id,
       name: s.name,
       description: s.description,
@@ -53,38 +37,40 @@ export async function GET() {
 
       images: s.images,
 
-      // ✅ Lines (with color)
       lines: s.lines.map((sl: any) => ({
         id: sl.line.id,
         name: sl.line.name,
         color: sl.line.color,
       })),
 
-      // ✅ Products (flattened + fallback logic)
       products: s.products.map((sp: any) => ({
         id: sp.product.id,
         name: sp.product.name,
         thumbnail: sp.product.thumbnail,
-
         defaultRateMonth: sp.product.defaultRateMonth,
         defaultRateDay: sp.product.defaultRateDay,
-
         units: sp.units,
         rateMonth: sp.rateMonth ?? sp.product.defaultRateMonth,
         rateDay: sp.rateDay ?? sp.product.defaultRateDay,
       })),
 
-      // ✅ Audiences
       audiences: s.audiences.map((sa: any) => ({
         id: sa.audience.id,
         name: sa.audience.name,
       })),
 
-      // ✅ Types
       types: s.types.map((st: any) => ({
         id: st.type.id,
         name: st.type.name,
       })),
-    }))
-  );
+    }));
+
+    return NextResponse.json(response);
+  } catch (error) {
+    console.error("❌ /api/stations error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch stations" },
+      { status: 500 }
+    );
+  }
 }

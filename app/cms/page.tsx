@@ -178,9 +178,9 @@ export default function StationsPage() {
   const [productPage, setProductPage] = useState(1);
 
   /* -------- LEADS STATE -------- */
-const [leads, setLeads] = useState<Lead[]>([]);
-const [leadSearch, setLeadSearch] = useState("");
-const [leadPage, setLeadPage] = useState(1);
+  const [leads, setLeads] = useState<Lead[]>([]);
+  const [leadSearch, setLeadSearch] = useState("");
+  const [leadPage, setLeadPage] = useState(1);
 
 
   /* -------- ADD/EDIT PRODUCT MODAL STATE -------- */
@@ -239,7 +239,7 @@ const [leadPage, setLeadPage] = useState(1);
   const handleExportStations = async () => {
     const res = await fetch("/api/stations/export");
     const blob = await res.blob();
-  
+
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -252,15 +252,15 @@ const [leadPage, setLeadPage] = useState(1);
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-  
+
     const formData = new FormData();
     formData.append("file", file);
-  
+
     const res = await fetch("/api/stations/import", {
       method: "POST",
       body: formData,
     });
-  
+
     if (res.ok) {
       alert("Stations imported successfully");
       fetchStations(); // refresh table
@@ -268,8 +268,8 @@ const [leadPage, setLeadPage] = useState(1);
       alert("Import failed");
     }
   };
-  
-  
+
+
 
   useEffect(() => {
     Promise.all([
@@ -280,7 +280,7 @@ const [leadPage, setLeadPage] = useState(1);
       fetch("/api/stations/types").then((res) => res.json()),
       fetch("/api/leads").then((res) => res.json()),
     ])
-    .then(([stationsData, linesData, productsData, audiencesData, typesData, leadsData]) => {
+      .then(([stationsData, linesData, productsData, audiencesData, typesData, leadsData]) => {
         const sortedLines = [...linesData].sort((a, b) => a.id - b.id);
         const sortedProducts = [...productsData].sort((a, b) => a.id - b.id);
         setStations(stationsData);
@@ -585,7 +585,7 @@ const [leadPage, setLeadPage] = useState(1);
     if (!confirm("Are you sure you want to delete this station? This action cannot be undone.")) return;
 
     try {
-      const res = await fetch(`/api/station/${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/stations/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
         alert(data.message || "Failed to delete station");
@@ -856,10 +856,10 @@ const [leadPage, setLeadPage] = useState(1);
               lead.status === "NEW"
                 ? "warning"
                 : lead.status === "CONTACTED"
-                ? "primary"
-                : lead.status === "CLOSED"
-                ? "success"
-                : "default"
+                  ? "primary"
+                  : lead.status === "CLOSED"
+                    ? "success"
+                    : "default"
             }
           >
             {lead.status}
@@ -871,7 +871,7 @@ const [leadPage, setLeadPage] = useState(1);
         return null;
     }
   }, []);
-  
+
 
   /* ---------------- RENDER ---------------- */
 
@@ -923,43 +923,46 @@ const [leadPage, setLeadPage] = useState(1);
                   ))}
                 </DropdownMenu>
               </Dropdown>
-                
+
               <Button variant="flat" onClick={handleExportStations}>
-  Export Excel
-</Button>
+                Export Excel
+              </Button>
 
-<Button
-color="secondary"
-onClick={() => document.getElementById("excelUpload")?.click()}
->
-Import Excel
-</Button>
+              <input
+                type="file"
+                accept=".xlsx, .xls"
+                id="stationImport"
+                style={{ display: "none" }}
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
 
-<input
-id="excelUpload"
-type="file"
-accept=".xlsx, .xls"
-hidden
-onChange={async (e) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+                  console.log("Uploading file:", file);
 
-  const formData = new FormData();
-  formData.append("file", file);
+                  const formData = new FormData();
+                  formData.append("file", file);
 
-  const res = await fetch("/api/stations/import", {
-    method: "POST",
-    body: formData,
-  });
+                  const res = await fetch("/api/stations/import", {
+                    method: "POST",
+                    body: formData,
+                  });
 
-  const data = await res.json();
-  alert(
-    `Inserted: ${data.inserted}\nSkipped: ${data.skipped}`
-  );
+                  const data = await res.json();
 
-  window.location.reload();
-}}
-/>
+                  alert(`Imported: ${data.success}, Failed: ${data.failed}`);
+
+                  location.reload();
+                }}
+              />
+
+              <Button
+                color="secondary"
+                onClick={() => document.getElementById("stationImport")?.click()}
+              >
+                Import Excel
+              </Button>
+
+
 
               <Link href="/cms/add">
                 <Button color="primary" endContent={<PlusIcon />}>
@@ -1193,50 +1196,50 @@ onChange={async (e) => {
         </Tab>
 
         <Tab key="leads" title="Leads">
-  <div className="flex justify-between mt-6 mb-4">
-    <Input
-      isClearable
-      className="w-1/3"
-      placeholder="Search leads..."
-      startContent={<SearchIcon />}
-      value={leadSearch}
-      onValueChange={(v) => {
-        setLeadSearch(v ?? "");
-        setLeadPage(1);
-      }}
-    />
-  </div>
+          <div className="flex justify-between mt-6 mb-4">
+            <Input
+              isClearable
+              className="w-1/3"
+              placeholder="Search leads..."
+              startContent={<SearchIcon />}
+              value={leadSearch}
+              onValueChange={(v) => {
+                setLeadSearch(v ?? "");
+                setLeadPage(1);
+              }}
+            />
+          </div>
 
-  <Table
-    isStriped
-    bottomContent={
-      <Pagination
-        page={leadPage}
-        total={Math.ceil(filteredLeads.length / rowsPerPage)}
-        onChange={setLeadPage}
-        showControls
-      />
-    }
-  >
-    <TableHeader columns={leadColumns}>
-      {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-    </TableHeader>
-    <TableBody
-      items={filteredLeads.slice(
-        (leadPage - 1) * rowsPerPage,
-        leadPage * rowsPerPage
-      )}
-    >
-      {(item) => (
-        <TableRow key={item.id}>
-          {(columnKey) => (
-            <TableCell>{renderLeadCell(item, columnKey as string)}</TableCell>
-          )}
-        </TableRow>
-      )}
-    </TableBody>
-  </Table>
-</Tab>
+          <Table
+            isStriped
+            bottomContent={
+              <Pagination
+                page={leadPage}
+                total={Math.ceil(filteredLeads.length / rowsPerPage)}
+                onChange={setLeadPage}
+                showControls
+              />
+            }
+          >
+            <TableHeader columns={leadColumns}>
+              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+            </TableHeader>
+            <TableBody
+              items={filteredLeads.slice(
+                (leadPage - 1) * rowsPerPage,
+                leadPage * rowsPerPage
+              )}
+            >
+              {(item) => (
+                <TableRow key={item.id}>
+                  {(columnKey) => (
+                    <TableCell>{renderLeadCell(item, columnKey as string)}</TableCell>
+                  )}
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Tab>
 
 
       </Tabs>

@@ -294,13 +294,44 @@ export default function AdOptionDetail() {
             <div className="bg-white rounded-2xl shadow-sm p-6" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
               <h4 className="font-semibold mb-1">Get Rates for {ad.type}</h4>
               <div className="text-xs text-gray-500 mb-4">Station: {ad.station.name}</div>
-              <form className="space-y-3" onSubmit={(e) => e.preventDefault()}>
-                <input required placeholder="Name" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <input required placeholder="Company" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <input required type="email" placeholder="Email" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <input required placeholder="Phone" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
+              <form
+  className="space-y-3"
+  onSubmit={async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.currentTarget);
+
+    const payload = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      companyName: formData.get("company"),
+      notes: formData.get("notes"),
+      stationId,
+      productId,
+    };
+
+    const res = await fetch("/api/leads", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      alert("Lead submitted successfully ✅");
+    } else {
+      alert("Failed to submit lead ❌");
+    }
+  }}
+>
+                <input name="name" required placeholder="Name" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
+                <input name="company" required placeholder="Company" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
+                <input name="email" required type="email" placeholder="Email" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
+                <input name="phone" required placeholder="Phone" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
                 <textarea placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
-                <button type="submit" className="w-full bg-red-600 text-white rounded-lg py-3 font-medium">Request Quote</button>
+                <button name="notes" type="submit" className="w-full bg-red-600 text-white rounded-lg py-3 font-medium">Request Quote</button>
                 <p className="text-xs text-gray-500 mt-4">We willl share the detailed inventory PDF and rates on email.</p>
               </form>
             </div>

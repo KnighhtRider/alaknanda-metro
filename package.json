@@ -14,12 +14,14 @@
     "@heroui/react": "^2.8.5",
     "@iconify/react": "^6.0.2",
     "@prisma/client": "^6.15.0",
+    "@react-pdf/renderer": "^4.3.2",
     "@vercel/blob": "^2.0.0",
     "framer-motion": "^12.23.22",
     "next": "^15.5.9",
     "prisma": "^6.15.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
+    "resend": "^6.9.2",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

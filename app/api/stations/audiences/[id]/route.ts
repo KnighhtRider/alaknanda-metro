@@ -1,33 +1,69 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+// ✅ UPDATE AUDIENCE
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = Number(params.id);
-    const body = await req.json();
+    const { id } = await params;
+    const numericId = Number(id);
+
+    if (isNaN(numericId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid audience ID" },
+        { status: 400 }
+      );
+    }
+
+    const body: { name?: string } = await req.json();
 
     const audience = await prisma.stationAudience.update({
-      where: { id },
-      data: { name: body.name },
+      where: { id: numericId },
+      data: {
+        name: body.name,
+      },
     });
 
     return NextResponse.json({ success: true, audience });
-  } catch (e) {
-    console.error("Update audience failed:", e);
-    return NextResponse.json({ success: false }, { status: 500 });
+  } catch (error) {
+    console.error("Update audience failed:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to update audience" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+// ✅ DELETE AUDIENCE
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = Number(params.id);
+    const { id } = await params;
+    const numericId = Number(id);
 
-    await prisma.stationAudience.delete({ where: { id } });
+    if (isNaN(numericId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid audience ID" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.stationAudience.delete({
+      where: { id: numericId },
+    });
+
     return NextResponse.json({ success: true });
-  } catch (e) {
-    console.error("Delete audience failed:", e);
-    return NextResponse.json({ success: false }, { status: 500 });
+  } catch (error) {
+    console.error("Delete audience failed:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to delete audience" },
+      { status: 500 }
+    );
   }
 }

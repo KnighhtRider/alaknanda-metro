@@ -1,33 +1,69 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+// ✅ UPDATE STATION TYPE
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = Number(params.id);
-    const body = await req.json();
+    const { id } = await params;
+    const numericId = Number(id);
+
+    if (isNaN(numericId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid type ID" },
+        { status: 400 }
+      );
+    }
+
+    const body: { name?: string } = await req.json();
 
     const type = await prisma.stationType.update({
-      where: { id },
-      data: { name: body.name },
+      where: { id: numericId },
+      data: {
+        name: body.name,
+      },
     });
 
     return NextResponse.json({ success: true, type });
-  } catch (e) {
-    console.error("Update type failed:", e);
-    return NextResponse.json({ success: false }, { status: 500 });
+  } catch (error) {
+    console.error("Update type failed:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to update type" },
+      { status: 500 }
+    );
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+// ✅ DELETE STATION TYPE
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = Number(params.id);
+    const { id } = await params;
+    const numericId = Number(id);
 
-    await prisma.stationType.delete({ where: { id } });
+    if (isNaN(numericId)) {
+      return NextResponse.json(
+        { success: false, message: "Invalid type ID" },
+        { status: 400 }
+      );
+    }
+
+    await prisma.stationType.delete({
+      where: { id: numericId },
+    });
+
     return NextResponse.json({ success: true });
-  } catch (e) {
-    console.error("Delete type failed:", e);
-    return NextResponse.json({ success: false }, { status: 500 });
+  } catch (error) {
+    console.error("Delete type failed:", error);
+    return NextResponse.json(
+      { success: false, message: "Failed to delete type" },
+      { status: 500 }
+    );
   }
 }

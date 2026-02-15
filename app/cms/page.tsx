@@ -115,6 +115,7 @@ const leadColumns = [
   { name: "REQUIREMENT", uid: "requirement" },
   { name: "STATUS", uid: "status" },
   { name: "CREATED AT", uid: "createdAt" },
+  { name: "ACTIONS", uid: "actions" }, // ✅ ADD THIS
 ];
 
 /* ---------------- COLORS ---------------- */
@@ -599,6 +600,31 @@ export default function StationsPage() {
     }
   };
 
+
+
+  const handleDeleteLead = async (id: number) => {
+    if (!confirm("Are you sure you want to delete this lead?")) return;
+
+    try {
+      const res = await fetch(`/api/leads/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.message || "Failed to delete lead");
+        return;
+      }
+
+      await fetchLeads(); // refresh list
+      alert("Lead deleted successfully");
+    } catch (error) {
+      console.error("Delete lead failed:", error);
+      alert("Something went wrong");
+    }
+  };
+
+
   /* ---------------- FILTERED DATA ---------------- */
 
   const filteredStations = useMemo(() => {
@@ -834,20 +860,26 @@ export default function StationsPage() {
     switch (columnKey) {
       case "id":
         return lead.id;
+
       case "companyName":
         return lead.companyName;
+
       case "name":
         return lead.name;
+
       case "email":
         return lead.email;
+
       case "phone":
         return lead.phone;
+
       case "requirement":
         return (
           <Chip size="sm" color={lead.requirement === "inventory" ? "success" : "primary"}>
             {lead.requirement}
           </Chip>
         );
+
       case "status":
         return (
           <Chip
@@ -865,12 +897,36 @@ export default function StationsPage() {
             {lead.status}
           </Chip>
         );
+
       case "createdAt":
         return new Date(lead.createdAt).toLocaleDateString();
+
+      case "actions": // ✅ ADD THIS
+        return (
+          <Dropdown>
+            <DropdownTrigger>
+              <Button isIconOnly size="sm" variant="light">
+                <VerticalDotsIcon />
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Lead Actions">
+              <DropdownItem
+                key="delete"
+                className="text-danger"
+                color="danger"
+                onClick={() => handleDeleteLead(lead.id)}
+              >
+                Delete
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        );
+
       default:
         return null;
     }
   }, []);
+
 
 
   /* ---------------- RENDER ---------------- */
@@ -1225,19 +1281,29 @@ export default function StationsPage() {
               {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
             </TableHeader>
             <TableBody
-              items={filteredLeads.slice(
-                (leadPage - 1) * rowsPerPage,
-                leadPage * rowsPerPage
-              )}
+              items={filteredLeads
+                .slice(
+                  (leadPage - 1) * rowsPerPage,
+                  leadPage * rowsPerPage
+                )
+                .map((item, index) => ({
+                  ...item,
+                  serialNumber: (leadPage - 1) * rowsPerPage + index + 1,
+                }))}
             >
               {(item) => (
                 <TableRow key={item.id}>
                   {(columnKey) => (
-                    <TableCell>{renderLeadCell(item, columnKey as string)}</TableCell>
+                    <TableCell>
+                      {columnKey === "id"
+                        ? (item as any).serialNumber // ✅ use computed serial
+                        : renderLeadCell(item, columnKey as string)}
+                    </TableCell>
                   )}
                 </TableRow>
               )}
             </TableBody>
+
           </Table>
         </Tab>
 

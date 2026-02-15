@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
+import { Spinner } from "@heroui/react";
 
 export default function StationDetailPage() {
   const params = useParams();
@@ -34,8 +35,8 @@ export default function StationDetailPage() {
 
   if (loading)
     return (
-      <div className="flex justify-center items-center min-h-screen text-gray-600">
-        Loading station details...
+      <div className="flex justify-center items-center h-screen text-lg text-gray-600">
+        <Spinner size="lg" color="danger" variant="gradient" />
       </div>
     );
 

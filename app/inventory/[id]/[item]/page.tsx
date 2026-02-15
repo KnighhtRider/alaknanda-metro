@@ -2,6 +2,7 @@
 import Link from "next/link";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from 'next/navigation';
+import { Spinner } from "@heroui/react";
 
 // --- Utilities ---
 function _clampIndex(i: number, len: number) {
@@ -99,10 +100,20 @@ function Carousel({ images, onOpen }: { images: string[]; onOpen: (src: string) 
   );
 }
 
+function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
+  return (
+    <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-lg shadow-md text-white z-50 
+      ${type === "success" ? "bg-green-500" : "bg-red-500"}`}>
+      {message}
+      <button className="ml-3 font-bold" onClick={onClose}>×</button>
+    </div>
+  );
+}
+
 export default function AdOptionDetail() {
   const params = useParams();
   const router = useRouter();
-  
+
   const stationId = Number(params.id);
   const productId = Number(params.item);
 
@@ -110,6 +121,19 @@ export default function AdOptionDetail() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false); // ✅ moved here
+  const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  
+  // ✅ Auto-hide toast after 3 seconds
+  useEffect(() => {
+    if (!toast) return;
+  
+    const timer = setTimeout(() => {
+      setToast(null);
+    }, 3000);
+  
+    return () => clearTimeout(timer); // cleanup
+  }, [toast]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,7 +142,6 @@ export default function AdOptionDetail() {
         const stationData = await res.json();
         setStation(stationData);
 
-        // Find the specific product
         const selectedProduct = stationData.products?.find((p: any) => p.id === productId);
         setProduct(selectedProduct);
       } catch (err) {
@@ -128,7 +151,7 @@ export default function AdOptionDetail() {
       }
     };
 
-    if (stationId && productId) {
+    if (!isNaN(stationId) && !isNaN(productId)) {
       fetchData();
     }
   }, [stationId, productId]);
@@ -136,7 +159,7 @@ export default function AdOptionDetail() {
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-screen text-gray-600">
-        Loading inventory details...
+        <Spinner size="lg" color="danger" variant="gradient" />
       </div>
     );
   }
@@ -149,7 +172,6 @@ export default function AdOptionDetail() {
     );
   }
 
-  // Build ad data from fetched station and product
   const ad = {
     id: product.id,
     type: product.name,
@@ -157,7 +179,7 @@ export default function AdOptionDetail() {
       id: station.id,
       name: station.name,
       line: station.lines?.[0] || "Metro Line",
-      lineColorClass: "bg-yellow-400", // You can map this from station.lines
+      lineColorClass: "bg-yellow-400",
       tags: ["Popular", "High Footfall"],
       footfall: station.footfall || "High footfall",
     },
@@ -194,24 +216,12 @@ export default function AdOptionDetail() {
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
-      {/* Header */}
-      {/* <header className="sticky top-0 z-40 bg-white/80 backdrop-blur-md shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold">AAL</div>
-            <span className="font-semibold text-lg">Delhi Metro Advertising</span>
-          </div>
-          <div className="hidden md:block text-sm text-gray-600">Questions? <a href="/contact" className="text-red-600">Get Free Consultation</a></div>
-        </div>
-      </header> */}
-
       {/* Breadcrumb */}
       <div className="max-w-7xl mx-auto px-6 pt-6 text-sm text-gray-500">
         <Link href="/">Home</Link> › <Link href="/catalogue">Catalogue</Link> › <Link href={`/station/${ad.station.id}`}>{ad.station.name}</Link> › <span className="text-gray-800">{ad.type}</span>
       </div>
 
       <main className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-12 gap-6">
-        {/* Left: content */}
         <section className="col-span-12 lg:col-span-8">
           {/* Header card */}
           <div className="bg-white rounded-2xl shadow-sm p-5">
@@ -249,7 +259,7 @@ export default function AdOptionDetail() {
             <div><Carousel images={ad.gallery} onOpen={setLightbox} /></div>
           </div>
 
-          {/* Collapsible: Specs & Guidelines */}
+          {/* Specs & Guidelines */}
           <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-4">
             <details open className="bg-white rounded-2xl shadow-sm p-5">
               <summary className="cursor-pointer font-semibold">Specs</summary>
@@ -295,44 +305,79 @@ export default function AdOptionDetail() {
               <h4 className="font-semibold mb-1">Get Rates for {ad.type}</h4>
               <div className="text-xs text-gray-500 mb-4">Station: {ad.station.name}</div>
               <form
-  className="space-y-3"
-  onSubmit={async (e) => {
-    e.preventDefault();
+                className="space-y-3"
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  if (submitting) return;
 
-    const formData = new FormData(e.currentTarget);
+                  const form = e.currentTarget; // ✅ STORE FORM REFERENCE
 
-    const payload = {
-      name: formData.get("name"),
-      email: formData.get("email"),
-      phone: formData.get("phone"),
-      companyName: formData.get("company"),
-      notes: formData.get("notes"),
-      stationId,
-      productId,
-    };
+                  setSubmitting(true);
 
-    const res = await fetch("/api/leads", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
+                  const formData = new FormData(form);
 
-    if (res.ok) {
-      alert("Lead submitted successfully ✅");
-    } else {
-      alert("Failed to submit lead ❌");
-    }
-  }}
->
+                  const payload = {
+                    name: formData.get("name"),
+                    email: formData.get("email"),
+                    phone: formData.get("phone"),
+                    companyName: formData.get("company"),
+                    notes: formData.get("notes"),
+                    stationId,
+                    productId,
+                  };
+
+                  try {
+                    const res = await fetch("/api/leads", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify(payload),
+                    });
+
+                    if (!res.ok) throw new Error("Server error");
+
+                    setToast({
+                      message: "Lead submitted successfully ✅",
+                      type: "success"
+                    });
+
+                    form.reset(); // ✅ SAFE NOW
+
+                  } catch (err) {
+                    console.error(err);
+                    setToast({
+                      message: "Something went wrong ❌",
+                      type: "error"
+                    });
+                  } finally {
+                    setSubmitting(false);
+                  }
+                }}
+              >
+
                 <input name="name" required placeholder="Name" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
                 <input name="company" required placeholder="Company" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
                 <input name="email" required type="email" placeholder="Email" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
                 <input name="phone" required placeholder="Phone" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <textarea placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
-                <button name="notes" type="submit" className="w-full bg-red-600 text-white rounded-lg py-3 font-medium">Request Quote</button>
-                <p className="text-xs text-gray-500 mt-4">We willl share the detailed inventory PDF and rates on email.</p>
+                <textarea name="notes" placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className={`w-full rounded-lg py-3 font-medium flex items-center justify-center gap-2 
+    ${submitting
+                      ? "bg-red-400 cursor-not-allowed"
+                      : "bg-red-600 hover:bg-red-700"} 
+    text-white transition`}
+                >
+                  {submitting ? (
+                    <>
+                      <Spinner size="sm" color="white" />
+                      Submitting...
+                    </>
+                  ) : (
+                    "Request Quote"
+                  )}
+                </button>
+                <p className="text-xs text-gray-500 mt-4">We will share the detailed inventory PDF and rates on email.</p>
               </form>
             </div>
 
@@ -353,20 +398,10 @@ export default function AdOptionDetail() {
           </div>
         </div>
       )}
+
+      {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
+
+
     </div>
   );
-}
-
-// --- Tests ---
-try {
-  console.assert(_clampIndex(-1, 5) === 0, "_clampIndex should clamp low bound to 0");
-  console.assert(_clampIndex(0, 5) === 0, "_clampIndex should allow 0");
-  console.assert(_clampIndex(4, 5) === 4, "_clampIndex should allow max-1");
-  console.assert(_clampIndex(10, 5) === 4, "_clampIndex should clamp high bound to len-1");
-  console.assert(Array.isArray(_ensureArray(undefined)), "_ensureArray should return array for undefined");
-  console.assert(_ensureArray(undefined).length === 0, "_ensureArray(undefined) should be empty array");
-  console.assert(_ensureArray("a")[0] === "a", "_ensureArray should wrap non-array value in array");
-  console.assert(JSON.stringify(_ensureArray([1,2])) === JSON.stringify([1,2]), "_ensureArray should return arrays as-is");
-} catch (e) {
-  console.warn("Self-tests failed:", e);
 }

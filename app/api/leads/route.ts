@@ -10,7 +10,7 @@ const resend = new Resend(process.env.RESEND_API_KEY!);
 // GET Leads
 export async function GET() {
   const leads = await prisma.contactUsSubmission.findMany({
-    orderBy: { createdAt: "desc" }, // newest first
+    orderBy: { createdAt: "asc" }, // newest first
   });
 
   return NextResponse.json(leads);
@@ -48,13 +48,13 @@ export async function POST(req: Request) {
       );
     }
 
-    // 2️⃣ find product
+    // 2️⃣ Find product
     const product = station.products.find(
       (p) => p.productId === productId
     );
 
-    // 3️⃣ Save Lead
-    await prisma.contactUsSubmission.create({
+    // 3️⃣ Save Lead FIRST (this is the only critical operation)
+    const lead = await prisma.contactUsSubmission.create({
       data: {
         name,
         email,
@@ -62,56 +62,69 @@ export async function POST(req: Request) {
         companyName,
         notes,
         requirement: "advertise",
-        stations: [station.name], // JSON field
+        stations: [station.name],
         adFormat: product?.product.name || null,
       },
     });
 
-    // 4️⃣ Generate PDF
-    const pdfStream = await renderToStream(
-      StationPdf({ station, product })
+    // 4️⃣ Send response immediately
+    const response = NextResponse.json(
+      { success: true, id: lead.id },
+      { status: 201 }
     );
 
-    const chunks: Uint8Array[] = [];
-    for await (const chunk of pdfStream as any) {
-      chunks.push(chunk);
-    }
-    const pdfBuffer = Buffer.concat(chunks);
+    // 5️⃣ Run email + PDF in background (non-blocking)
+    (async () => {
+      try {
+        const pdfStream = await renderToStream(
+          StationPdf({ station, product })
+        );
 
-    // 5️⃣ Send USER email
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM!,
-      to: email,
-      subject: `Your enquiry for ${station.name}`,
-      html: `
-        <h2>Hello ${name},</h2>
-        <p>Thank you for your interest.</p>
-        <p><strong>You have enquired for advertising at ${station.name}</strong></p>
-        <p>Our team will contact you shortly.</p>
-      `,
-      attachments: [
-        {
-          filename: `${station.name}.pdf`,
-          content: pdfBuffer,
-        },
-      ],
-    });
+        const chunks: Uint8Array[] = [];
+        for await (const chunk of pdfStream as any) {
+          chunks.push(chunk);
+        }
+        const pdfBuffer = Buffer.concat(chunks);
 
-    // 6️⃣ Admin email
-    await resend.emails.send({
-      from: process.env.EMAIL_FROM!,
-      to: process.env.ADMIN_EMAIL!,
-      subject: `New Lead - ${station.name}`,
-      html: `
-        <h3>New Lead Received</h3>
-        <p><b>Name:</b> ${name}</p>
-        <p><b>Company:</b> ${companyName}</p>
-        <p><b>Email:</b> ${email}</p>
-        <p><b>Station:</b> ${station.name}</p>
-      `,
-    });
+        // User email
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM!,
+          to: email,
+          subject: `Your enquiry for ${station.name}`,
+          html: `
+            <h2>Hello ${name},</h2>
+            <p>Thank you for your interest.</p>
+            <p><strong>You have enquired for advertising at ${station.name}</strong></p>
+            <p>Our team will contact you shortly.</p>
+          `,
+          attachments: [
+            {
+              filename: `${station.name}.pdf`,
+              content: pdfBuffer,
+            },
+          ],
+        });
 
-    return NextResponse.json({ success: true });
+        // Admin email
+        await resend.emails.send({
+          from: process.env.EMAIL_FROM!,
+          to: process.env.ADMIN_EMAIL!,
+          subject: `New Lead - ${station.name}`,
+          html: `
+            <h3>New Lead Received</h3>
+            <p><b>Name:</b> ${name}</p>
+            <p><b>Company:</b> ${companyName}</p>
+            <p><b>Email:</b> ${email}</p>
+            <p><b>Station:</b> ${station.name}</p>
+          `,
+        });
+
+      } catch (emailError) {
+        console.error("EMAIL ERROR (non-blocking):", emailError);
+      }
+    })();
+
+    return response;
 
   } catch (error) {
     console.error("LEAD ERROR:", error);
@@ -121,3 +134,4 @@ export async function POST(req: Request) {
     );
   }
 }
+

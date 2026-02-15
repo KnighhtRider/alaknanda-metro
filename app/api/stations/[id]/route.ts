@@ -18,24 +18,29 @@ export async function GET(
       include: {
         images: true,
 
-        // join table → include the actual Line master data
         lines: {
-          include: {
-            line: true,
-          },
+          include: { line: true },
         },
 
-        // join table → include the actual Product master data
         products: {
-          include: {
-            product: true,
-          },
+          include: { product: true },
+        },
+
+        audiences: {
+          include: { audience: true },
+        },
+
+        types: {
+          include: { type: true },
         },
       },
     });
 
     if (!station) {
-      return NextResponse.json({ error: "Station not found" }, { status: 404 });
+      return NextResponse.json(
+        { error: "Station not found" },
+        { status: 404 }
+      );
     }
 
     const formatted = {
@@ -47,18 +52,27 @@ export async function GET(
       longitude: station.longitude,
       footfall: station.footfall,
       totalInventory: station.totalInventory,
-      images: station.images,
-      lines: station.lines.map((sl: any) => sl.line.name),
-      products: station.products.map((sp: any) => ({
+
+      // ✅ FIX 1: images as string[]
+      images: station.images.map((img) => img.imageUrl),
+
+      // ✅ FIX 2: return line IDs (not names)
+      lines: station.lines.map((sl) => sl.line.id),
+
+      // ✅ FIX 3: return audience IDs
+      audiences: station.audiences.map((sa) => sa.audience.id),
+
+      // ✅ FIX 4: return type IDs
+      types: station.types.map((st) => st.type.id),
+
+      products: station.products.map((sp) => ({
         id: sp.product.id,
         name: sp.product.name,
         thumbnail: sp.product.thumbnail,
 
-        // master rates
         defaultRateMonth: sp.product.defaultRateMonth,
         defaultRateDay: sp.product.defaultRateDay,
 
-        // station overrides
         units: sp.units,
         rateMonth: sp.rateMonth ?? sp.product.defaultRateMonth,
         rateDay: sp.rateDay ?? sp.product.defaultRateDay,
@@ -68,12 +82,14 @@ export async function GET(
     return NextResponse.json(formatted);
   } catch (error) {
     console.error("Error fetching station:", error);
+
     return NextResponse.json(
       { error: "Failed to fetch station details" },
       { status: 500 }
     );
   }
 }
+
 
 /* ---------------- DELETE STATION (FIXED) ---------------- */
 

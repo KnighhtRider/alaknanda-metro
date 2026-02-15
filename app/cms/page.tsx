@@ -705,9 +705,9 @@ export default function StationsPage() {
                 </Button>
               </DropdownTrigger>
               <DropdownMenu aria-label="Station Actions">
-                {/* <DropdownItem key="edit" onClick={() => handleEditStation(station.id)}>
+                <DropdownItem key="edit" onClick={() => handleEditStation(station.id)}>
                   Edit
-                </DropdownItem> */}
+                </DropdownItem>
                 <DropdownItem
                   key="delete"
                   className="text-danger"

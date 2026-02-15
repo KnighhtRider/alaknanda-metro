@@ -111,9 +111,9 @@ export default function EditStationPage() {
           footfall: stationData.footfall?.toString() || "",
           totalInventory: stationData.totalInventory?.toString() || "",
           images: stationData.images && stationData.images.length > 0 ? stationData.images : [""],
-          lineIds: stationData.lines?.map((l: any) => l.id) || [],
-          audienceIds: stationData.audiences?.map((a: any) => a.id) || [],
-          typeIds: stationData.types?.map((t: any) => t.id) || [],
+          lineIds: stationData.lines || [],
+          audienceIds: stationData.audiences || [],
+          typeIds: stationData.types || [],
           products: stationData.products?.map((p: any) => ({
             productId: p.productId || p.id,
             units: p.units || 0,
@@ -213,8 +213,6 @@ export default function EditStationPage() {
     }
     if (!form.footfall.trim()) {
       newErrors.footfall = "Footfall is required";
-    } else if (isNaN(parseInt(form.footfall)) || parseInt(form.footfall) < 0) {
-      newErrors.footfall = "Footfall must be a valid positive number";
     }
 
     const hasEmptyImages = form.images.some((img) => !img.trim());
@@ -252,7 +250,7 @@ export default function EditStationPage() {
         address: form.address.trim(),
         latitude: parseFloat(form.latitude),
         longitude: parseFloat(form.longitude),
-        footfall: parseInt(form.footfall),
+        footfall: form.footfall.trim(),
         totalInventory,
         images: form.images.filter((img) => img.trim()),
         lineIds: form.lineIds,
@@ -262,7 +260,7 @@ export default function EditStationPage() {
       };
 
       const res = await fetch(`/api/stations/edit`, {
-        method: "POST",
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
@@ -283,7 +281,7 @@ export default function EditStationPage() {
 
       const data = await res.json();
       alert("Station updated successfully!");
-      window.location.href = "/catalogue";
+      window.location.href = "/cms";
     } catch (error) {
       console.error("Submit error:", error);
       alert("An error occurred while updating. Please try again.");
@@ -382,18 +380,19 @@ export default function EditStationPage() {
 
         {/* Footfall */}
         <Input
-          label="Footfall (daily)"
-          placeholder="e.g., 500000"
-          variant="bordered"
-          radius="md"
-          value={form.footfall}
-          isInvalid={!!errors.footfall}
-          errorMessage={errors.footfall}
-          onValueChange={(value) => updateField("footfall", value)}
-          labelPlacement="outside"
-          type="number"
-          isRequired
-        />
+  label="Footfall (daily)"
+  placeholder="e.g., ~5,20,000 riders/day"
+  variant="bordered"
+  radius="md"
+  value={form.footfall}
+  isInvalid={!!errors.footfall}
+  errorMessage={errors.footfall}
+  onValueChange={(value) => updateField("footfall", value)}
+  labelPlacement="outside"
+  type="text"   // ✅ changed
+  isRequired
+/>
+
 
         {/* Images */}
         <div>
@@ -440,9 +439,9 @@ export default function EditStationPage() {
               <Button variant="bordered" endContent={<ChevronDownIcon />} className="w-full md:w-auto">
                 {form.lineIds.length > 0
                   ? lines
-                      .filter((line) => form.lineIds.includes(line.id))
-                      .map((line) => line.name)
-                      .join(", ")
+                    .filter((line) => form.lineIds.includes(line.id))
+                    .map((line) => line.name)
+                    .join(", ")
                   : "Select Lines"}
               </Button>
             </DropdownTrigger>
@@ -475,9 +474,9 @@ export default function EditStationPage() {
               <Button variant="bordered" endContent={<ChevronDownIcon />} className="w-full md:w-auto">
                 {form.audienceIds.length > 0
                   ? audiences
-                      .filter((audience) => form.audienceIds.includes(audience.id))
-                      .map((audience) => audience.name)
-                      .join(", ")
+                    .filter((audience) => form.audienceIds.includes(audience.id))
+                    .map((audience) => audience.name)
+                    .join(", ")
                   : "Select Audience"}
               </Button>
             </DropdownTrigger>
@@ -510,9 +509,9 @@ export default function EditStationPage() {
               <Button variant="bordered" endContent={<ChevronDownIcon />} className="w-full md:w-auto">
                 {form.typeIds.length > 0
                   ? types
-                      .filter((type) => form.typeIds.includes(type.id))
-                      .map((type) => type.name)
-                      .join(", ")
+                    .filter((type) => form.typeIds.includes(type.id))
+                    .map((type) => type.name)
+                    .join(", ")
                   : "Select Types"}
               </Button>
             </DropdownTrigger>
@@ -548,9 +547,8 @@ export default function EditStationPage() {
               return (
                 <div
                   key={product.id}
-                  className={`border-2 p-4 rounded-lg transition-all ${
-                    selected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
-                  }`}
+                  className={`border-2 p-4 rounded-lg transition-all ${selected ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white"
+                    }`}
                 >
                   <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-3">

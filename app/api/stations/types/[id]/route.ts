@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-// ✅ Singleton Prisma client for Vercel
-const prisma = globalThis.prisma || new PrismaClient();
-if (!globalThis.prisma) globalThis.prisma = prisma;
+export const runtime = "nodejs"; // ✅ Required for Prisma on Vercel
 
 // ✅ UPDATE STATION TYPE
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } } // ❌ removed Promise<>
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const numericId = Number(params.id);
+    const { id } = await context.params; // ✅ Next 15 fix
+    const numericId = Number(id);
 
     if (isNaN(numericId)) {
       return NextResponse.json(
@@ -32,6 +31,7 @@ export async function PUT(
     return NextResponse.json({ success: true, type });
   } catch (error) {
     console.error("Update type failed:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to update type" },
       { status: 500 }
@@ -42,10 +42,11 @@ export async function PUT(
 // ✅ DELETE STATION TYPE
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } } // ❌ removed Promise<>
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const numericId = Number(params.id);
+    const { id } = await context.params; // ✅ Next 15 fix
+    const numericId = Number(id);
 
     if (isNaN(numericId)) {
       return NextResponse.json(
@@ -61,6 +62,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete type failed:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to delete type" },
       { status: 500 }

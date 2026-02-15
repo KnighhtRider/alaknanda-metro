@@ -1,15 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+export const runtime = "nodejs"; // ✅ Required for Prisma on Vercel
 
 // ✅ UPDATE LINE
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } } // fix here
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const numericId = Number(params.id);
+    const { id } = await context.params; // ✅ Next 15 fix
+    const numericId = Number(id);
 
     if (isNaN(numericId)) {
       return NextResponse.json(
@@ -31,6 +32,7 @@ export async function PUT(
     return NextResponse.json({ success: true, line });
   } catch (error) {
     console.error("Update line failed:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to update line" },
       { status: 500 }
@@ -41,10 +43,11 @@ export async function PUT(
 // ✅ DELETE LINE
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } } // fix here too
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
-    const numericId = Number(params.id);
+    const { id } = await context.params; // ✅ Next 15 fix
+    const numericId = Number(id);
 
     if (isNaN(numericId)) {
       return NextResponse.json(
@@ -60,6 +63,7 @@ export async function DELETE(
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Delete line failed:", error);
+
     return NextResponse.json(
       { success: false, message: "Failed to delete line" },
       { status: 500 }

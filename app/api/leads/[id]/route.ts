@@ -1,20 +1,23 @@
-import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-const prisma = new PrismaClient();
+export const runtime = "nodejs"; // ✅ Required for Prisma on Vercel
 
 export async function DELETE(
-  request: Request,
-  { params }: { params: { id: string } }
+  request: NextRequest,
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await context.params; // ✅ Next 15 requires await
+
     await prisma.contactUsSubmission.delete({
-      where: { id: Number(params.id) },
+      where: { id: Number(id) },
     });
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("DELETE LEAD ERROR:", error);
+
     return NextResponse.json(
       { message: "Failed to delete lead" },
       { status: 500 }

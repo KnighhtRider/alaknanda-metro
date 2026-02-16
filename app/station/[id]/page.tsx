@@ -66,7 +66,7 @@ export default function StationDetailPage() {
           {/* Compact Station Card */}
           <div className="flex items-center gap-4 bg-white rounded-xl shadow-sm p-3">
             <img
-              src={station.images?.[0]?.imageUrl}
+              src={station.images?.[0]}
               alt={station.name}
               className="w-48 h-24 object-cover rounded-md"
             />

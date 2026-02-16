@@ -188,7 +188,7 @@ export default function AdOptionDetail() {
       startingDay: product.rateDay || product.defaultRateDay || 0,
       startingMonth: product.rateMonth || (product.rateDay || product.defaultRateDay || 0) * 30,
     },
-    gallery: station.images?.map((img: any) => img.imageUrl) || [product.thumbnail],
+    gallery: station.images || [product.thumbnail],
     specs: {
       typicalSizes: product.sizes || ["6x3 ft", "8x4 ft", "10x4 ft"],
       illumination: product.illumination || "LED backlit",

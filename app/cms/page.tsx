@@ -248,6 +248,31 @@ export default function StationsPage() {
     a.click();
   };
 
+  const handleDownloadTemplate = async () => {
+    try {
+      const res = await fetch("/api/stations/template");
+
+      if (!res.ok) {
+        alert("Failed to download template");
+        return;
+      }
+
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "station-import-template.xlsx";
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Template download failed:", error);
+      alert("Something went wrong");
+    }
+  };
+
+
   const handleImportStations = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -982,6 +1007,10 @@ export default function StationsPage() {
 
               <Button variant="flat" onClick={handleExportStations}>
                 Export Excel
+              </Button>
+
+              <Button variant="flat" color="primary" onClick={handleDownloadTemplate}>
+                Download Import Format
               </Button>
 
               <input

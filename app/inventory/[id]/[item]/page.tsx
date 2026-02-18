@@ -121,18 +121,58 @@ export default function AdOptionDetail() {
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [lightbox, setLightbox] = useState<string | null>(null);
-  const [submitting, setSubmitting] = useState(false); // ✅ moved here
+  const [submitting, setSubmitting] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // ✅ Validation States
+  const [formData, setFormData] = useState({
+    name: "",
+    company: "",
+    email: "",
+    phone: "",
+    notes: "",
+  });
+  const [errors, setErrors] = useState<any>({});
+
+  // ✅ input change with phone filter
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (name === "phone") {
+      const onlyNums = value.replace(/\D/g, "");
+      if (onlyNums.length <= 10) {
+        setFormData((prev) => ({ ...prev, phone: onlyNums }));
+      }
+      return;
+    }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // ✅ validation logic
+  const validateForm = () => {
+    const newErrors: any = {};
+    if (!formData.name.trim()) newErrors.name = "Name is required";
+    if (!formData.company.trim()) newErrors.company = "Company is required";
+    if (!formData.email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      newErrors.email = "Invalid email";
+    }
+    if (!formData.phone) {
+      newErrors.phone = "Phone is required";
+    } else if (formData.phone.length !== 10) {
+      newErrors.phone = "Must be 10 digits";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
   
   // ✅ Auto-hide toast after 3 seconds
   useEffect(() => {
     if (!toast) return;
-  
     const timer = setTimeout(() => {
       setToast(null);
     }, 3000);
-  
-    return () => clearTimeout(timer); // cleanup
+    return () => clearTimeout(timer);
   }, [toast]);
 
   useEffect(() => {
@@ -310,18 +350,14 @@ export default function AdOptionDetail() {
                   e.preventDefault();
                   if (submitting) return;
 
-                  const form = e.currentTarget; // ✅ STORE FORM REFERENCE
+                  // ✅ Validate before submission
+                  if (!validateForm()) return;
 
                   setSubmitting(true);
 
-                  const formData = new FormData(form);
-
                   const payload = {
-                    name: formData.get("name"),
-                    email: formData.get("email"),
-                    phone: formData.get("phone"),
-                    companyName: formData.get("company"),
-                    notes: formData.get("notes"),
+                    ...formData,
+                    companyName: formData.company, // Aligning with your API naming
                     stationId,
                     productId,
                   };
@@ -340,7 +376,9 @@ export default function AdOptionDetail() {
                       type: "success"
                     });
 
-                    form.reset(); // ✅ SAFE NOW
+                    // Reset form state
+                    setFormData({ name: "", company: "", email: "", phone: "", notes: "" });
+                    setErrors({});
 
                   } catch (err) {
                     console.error(err);
@@ -353,20 +391,34 @@ export default function AdOptionDetail() {
                   }
                 }}
               >
+                <div>
+                  <input name="name" value={formData.name} onChange={handleChange} placeholder="Name" className={`w-full border rounded-lg px-3 py-2 ${errors.name ? 'border-red-500' : 'border-gray-200'}`} />
+                  {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.name}</p>}
+                </div>
+                
+                <div>
+                  <input name="company" value={formData.company} onChange={handleChange} placeholder="Company" className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-200'}`} />
+                  {errors.company && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.company}</p>}
+                </div>
 
-                <input name="name" required placeholder="Name" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <input name="company" required placeholder="Company" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <input name="email" required type="email" placeholder="Email" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <input name="phone" required placeholder="Phone" className="w-full border border-gray-200 rounded-lg px-3 py-2" />
-                <textarea name="notes" placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
+                <div>
+                  <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" className={`w-full border rounded-lg px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
+                  {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.email}</p>}
+                </div>
+
+                <div>
+                  <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" className={`w-full border rounded-lg px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} />
+                  {errors.phone && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.phone}</p>}
+                </div>
+
+                <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
+                
                 <button
                   type="submit"
                   disabled={submitting}
                   className={`w-full rounded-lg py-3 font-medium flex items-center justify-center gap-2 
-    ${submitting
-                      ? "bg-red-400 cursor-not-allowed"
-                      : "bg-red-600 hover:bg-red-700"} 
-    text-white transition`}
+                    ${submitting ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} 
+                    text-white transition`}
                 >
                   {submitting ? (
                     <>
@@ -400,7 +452,6 @@ export default function AdOptionDetail() {
       )}
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
-
 
     </div>
   );

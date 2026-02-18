@@ -115,7 +115,7 @@ const leadColumns = [
   { name: "REQUIREMENT", uid: "requirement" },
   { name: "STATUS", uid: "status" },
   { name: "CREATED AT", uid: "createdAt" },
-  { name: "ACTIONS", uid: "actions" }, // ✅ ADD THIS
+  { name: "ACTIONS", uid: "actions" },
 ];
 
 /* ---------------- COLORS ---------------- */
@@ -129,6 +129,26 @@ const lineColorMap: Record<string, any> = {
   Violet: "secondary",
   Pink: "secondary",
   "Airport Express": "default",
+};
+
+const LEAD_STATUS_OPTIONS = [
+  "NEW",
+  "CONTACTED",
+  "HOT",
+  "WARM",
+  "COLD",
+  "CLOSED",
+  "LOST",
+];
+
+const leadStatusColorMap: Record<string, any> = {
+  NEW: "warning",
+  CONTACTED: "primary",
+  HOT: "danger",
+  WARM: "secondary",
+  COLD: "default",
+  CLOSED: "success",
+  LOST: "default",
 };
 
 /* ---------------- COMPONENT ---------------- */
@@ -182,7 +202,7 @@ export default function StationsPage() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [leadSearch, setLeadSearch] = useState("");
   const [leadPage, setLeadPage] = useState(1);
-
+  const [selectedLead, setSelectedLead] = useState<Lead | null>(null);
 
   /* -------- ADD/EDIT PRODUCT MODAL STATE -------- */
   const [isProductModalOpen, setIsProductModalOpen] = useState(false);
@@ -204,13 +224,13 @@ export default function StationsPage() {
   const fetchLines = useCallback(async () => {
     const res = await fetch("/api/lines");
     const data = await res.json();
-    setLines([...data].sort((a, b) => a.id - b.id));
+    setLines([...data].sort((a: Line, b: Line) => a.id - b.id));
   }, []);
 
   const fetchProducts = useCallback(async () => {
     const res = await fetch("/api/products");
     const data = await res.json();
-    setProducts([...data].sort((a, b) => a.id - b.id));
+    setProducts([...data].sort((a: Product, b: Product) => a.id - b.id));
   }, []);
 
   const fetchAudiences = useCallback(async () => {
@@ -240,7 +260,6 @@ export default function StationsPage() {
   const handleExportStations = async () => {
     const res = await fetch("/api/stations/export");
     const blob = await res.blob();
-
     const url = window.URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
@@ -251,20 +270,16 @@ export default function StationsPage() {
   const handleDownloadTemplate = async () => {
     try {
       const res = await fetch("/api/stations/template");
-
       if (!res.ok) {
         alert("Failed to download template");
         return;
       }
-
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
-
       const a = document.createElement("a");
       a.href = url;
       a.download = "station-import-template.xlsx";
       a.click();
-
       window.URL.revokeObjectURL(url);
     } catch (error) {
       console.error("Template download failed:", error);
@@ -272,30 +287,22 @@ export default function StationsPage() {
     }
   };
 
-
-  const handleImportStations = async (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleImportStations = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const formData = new FormData();
     formData.append("file", file);
-
     const res = await fetch("/api/stations/import", {
       method: "POST",
       body: formData,
     });
-
     if (res.ok) {
       alert("Stations imported successfully");
-      fetchStations(); // refresh table
+      fetchStations();
     } else {
       alert("Import failed");
     }
   };
-
-
 
   useEffect(() => {
     Promise.all([
@@ -307,12 +314,12 @@ export default function StationsPage() {
       fetch("/api/leads").then((res) => res.json()),
     ])
       .then(([stationsData, linesData, productsData, audiencesData, typesData, leadsData]) => {
-        const sortedLines = [...linesData].sort((a, b) => a.id - b.id);
-        const sortedProducts = [...productsData].sort((a, b) => a.id - b.id);
+        const sortedLines = [...linesData].sort((a: Line, b: Line) => a.id - b.id);
+        const sortedProducts = [...productsData].sort((a: Product, b: Product) => a.id - b.id);
         setStations(stationsData);
         setLines(sortedLines);
         setProducts(sortedProducts);
-        setSelectedLines(new Set(sortedLines.map((l) => l.name)));
+        setSelectedLines(new Set(sortedLines.map((l: Line) => l.name)));
         setAudiences(audiencesData);
         setTypes(typesData);
         setLeads(leadsData);
@@ -339,13 +346,10 @@ export default function StationsPage() {
       alert("Line name is required");
       return;
     }
-
     try {
       setSubmittingLine(true);
-
       const method = editingLine ? "PUT" : "POST";
       const url = editingLine ? `/api/lines/${editingLine.id}` : "/api/lines";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -354,14 +358,11 @@ export default function StationsPage() {
           color: lineFormData.color || null,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         alert(data.message || `Failed to ${editingLine ? "update" : "add"} line`);
         return;
       }
-
       setIsLineModalOpen(false);
       await fetchLines();
     } catch (e) {
@@ -374,7 +375,6 @@ export default function StationsPage() {
 
   const handleDeleteLine = async (id: number) => {
     if (!confirm("Are you sure you want to delete this line?")) return;
-
     try {
       const res = await fetch(`/api/lines/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -413,13 +413,10 @@ export default function StationsPage() {
       alert("Product name is required");
       return;
     }
-
     try {
       setSubmittingProduct(true);
-
       const method = editingProduct ? "PUT" : "POST";
       const url = editingProduct ? `/api/products/${editingProduct.id}` : "/api/products";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -430,14 +427,11 @@ export default function StationsPage() {
           defaultRateDay: productFormData.rateDay ? parseFloat(productFormData.rateDay) : null,
         }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         alert(data.message || `Failed to ${editingProduct ? "update" : "add"} product`);
         return;
       }
-
       setIsProductModalOpen(false);
       await fetchProducts();
     } catch (e) {
@@ -450,7 +444,6 @@ export default function StationsPage() {
 
   const handleDeleteProduct = async (id: number) => {
     if (!confirm("Are you sure you want to delete this product?")) return;
-
     try {
       const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -484,28 +477,22 @@ export default function StationsPage() {
       alert("Audience name is required");
       return;
     }
-
     try {
       setSubmittingAudience(true);
-
       const method = editingAudience ? "PUT" : "POST";
       const url = editingAudience
         ? `/api/stations/audiences/${editingAudience.id}`
         : "/api/stations/audiences";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: audienceFormData.name.trim() }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         alert(data.message || `Failed to ${editingAudience ? "update" : "add"} audience`);
         return;
       }
-
       setIsAudienceModalOpen(false);
       await fetchAudiences();
     } catch (e) {
@@ -518,7 +505,6 @@ export default function StationsPage() {
 
   const handleDeleteAudience = async (id: number) => {
     if (!confirm("Are you sure you want to delete this audience?")) return;
-
     try {
       const res = await fetch(`/api/stations/audiences/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -552,28 +538,22 @@ export default function StationsPage() {
       alert("Type name is required");
       return;
     }
-
     try {
       setSubmittingType(true);
-
       const method = editingType ? "PUT" : "POST";
       const url = editingType
         ? `/api/stations/types/${editingType.id}`
         : "/api/stations/types";
-
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: typeFormData.name.trim() }),
       });
-
       const data = await res.json();
-
       if (!res.ok) {
         alert(data.message || `Failed to ${editingType ? "update" : "add"} type`);
         return;
       }
-
       setIsTypeModalOpen(false);
       await fetchTypes();
     } catch (e) {
@@ -586,7 +566,6 @@ export default function StationsPage() {
 
   const handleDeleteType = async (id: number) => {
     if (!confirm("Are you sure you want to delete this type?")) return;
-
     try {
       const res = await fetch(`/api/stations/types/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -609,7 +588,6 @@ export default function StationsPage() {
 
   const handleDeleteStation = async (id: number) => {
     if (!confirm("Are you sure you want to delete this station? This action cannot be undone.")) return;
-
     try {
       const res = await fetch(`/api/stations/${id}`, { method: "DELETE" });
       if (!res.ok) {
@@ -625,23 +603,18 @@ export default function StationsPage() {
     }
   };
 
-
+  /* ---------------- LEAD HANDLERS ---------------- */
 
   const handleDeleteLead = async (id: number) => {
     if (!confirm("Are you sure you want to delete this lead?")) return;
-
     try {
-      const res = await fetch(`/api/leads/${id}`, {
-        method: "DELETE",
-      });
-
+      const res = await fetch(`/api/leads/${id}`, { method: "DELETE" });
       if (!res.ok) {
         const data = await res.json();
         alert(data.message || "Failed to delete lead");
         return;
       }
-
-      await fetchLeads(); // refresh list
+      await fetchLeads();
       alert("Lead deleted successfully");
     } catch (error) {
       console.error("Delete lead failed:", error);
@@ -649,43 +622,63 @@ export default function StationsPage() {
     }
   };
 
+  const handleLeadStatusChange = async (leadId: number, status: string) => {
+    try {
+      const res = await fetch(`/api/leads/${leadId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        alert("Failed to update status");
+        return;
+      }
+      await fetchLeads();
+    } catch (e) {
+      console.error("Status update failed", e);
+      alert("Something went wrong");
+    }
+  };
+
+  const handleSendEmail = (lead: Lead) => {
+    window.location.href = `mailto:${lead.email}?subject=Following up on your inquiry&body=Dear ${lead.name},%0D%0A%0D%0AThank you for your interest.`;
+  };
 
   /* ---------------- FILTERED DATA ---------------- */
 
   const filteredStations = useMemo(() => {
     return stations.filter((s) => {
       const matchesSearch =
-        s.name.toLowerCase().includes(stationSearch.toLowerCase()) ||
-        s.address.toLowerCase().includes(stationSearch.toLowerCase());
+        s.name?.toLowerCase().includes(stationSearch.toLowerCase()) ||
+        s.address?.toLowerCase().includes(stationSearch.toLowerCase());
       const matchesLines =
-        selectedLines.size === 0 || s.lines.some((l) => selectedLines.has(l.name));
+        selectedLines.size === 0 || s.lines?.some((l) => selectedLines.has(l.name));
       return matchesSearch && matchesLines;
     });
   }, [stations, stationSearch, selectedLines]);
 
   const filteredLines = useMemo(() => {
-    return lines.filter((l) => l.name.toLowerCase().includes(lineSearch.toLowerCase()));
+    return lines.filter((l) => l.name?.toLowerCase().includes(lineSearch.toLowerCase()));
   }, [lines, lineSearch]);
 
   const filteredProducts = useMemo(() => {
-    return products.filter((p) => p.name.toLowerCase().includes(productSearch.toLowerCase()));
+    return products.filter((p) => p.name?.toLowerCase().includes(productSearch.toLowerCase()));
   }, [products, productSearch]);
 
   const filteredAudiences = useMemo(() => {
-    return audiences.filter((a) => a.name.toLowerCase().includes(audienceSearch.toLowerCase()));
+    return audiences.filter((a) => a.name?.toLowerCase().includes(audienceSearch.toLowerCase()));
   }, [audiences, audienceSearch]);
 
   const filteredTypes = useMemo(() => {
-    return types.filter((t) => t.name.toLowerCase().includes(typeSearch.toLowerCase()));
+    return types.filter((t) => t.name?.toLowerCase().includes(typeSearch.toLowerCase()));
   }, [types, typeSearch]);
-
 
   const filteredLeads = useMemo(() => {
     return leads.filter(
       (l) =>
-        l.name.toLowerCase().includes(leadSearch.toLowerCase()) ||
-        l.companyName.toLowerCase().includes(leadSearch.toLowerCase()) ||
-        l.email.toLowerCase().includes(leadSearch.toLowerCase())
+        l.name?.toLowerCase().includes(leadSearch.toLowerCase()) ||
+        l.companyName?.toLowerCase().includes(leadSearch.toLowerCase()) ||
+        l.email?.toLowerCase().includes(leadSearch.toLowerCase())
     );
   }, [leads, leadSearch]);
 
@@ -700,7 +693,7 @@ export default function StationsPage() {
       case "lines":
         return (
           <div className="flex gap-1 flex-wrap">
-            {station.lines.map((line) => (
+            {station.lines?.map((line) => (
               <Chip key={line.id} color={lineColorMap[line.name] || "default"} size="sm">
                 {line.name}
               </Chip>
@@ -798,7 +791,11 @@ export default function StationsPage() {
         return product.id;
       case "thumbnail":
         return product.thumbnail ? (
-          <img src={product.thumbnail} alt={product.name} className="w-12 h-12 object-cover rounded" />
+          <img
+            src={product.thumbnail}
+            alt={product.name}
+            className="w-12 h-12 object-cover rounded"
+          />
         ) : (
           <div className="w-12 h-12 bg-gray-200 rounded" />
         );
@@ -880,469 +877,599 @@ export default function StationsPage() {
     []
   );
 
+  const renderLeadCell = useCallback(
+    (lead: Lead, columnKey: string) => {
+      switch (columnKey) {
+        case "id":
+          return lead.id;
 
-  const renderLeadCell = useCallback((lead: Lead, columnKey: string) => {
-    switch (columnKey) {
-      case "id":
-        return lead.id;
+        case "companyName":
+          return lead.companyName ?? "—";
 
-      case "companyName":
-        return lead.companyName;
+        case "name":
+          return lead.name ?? "—";
 
-      case "name":
-        return lead.name;
+        case "email":
+          return lead.email ?? "—";
 
-      case "email":
-        return lead.email;
+        case "phone":
+          return lead.phone ?? "—";
 
-      case "phone":
-        return lead.phone;
+        case "requirement":
+          return lead.requirement ? (
+            <Chip size="sm" color={lead.requirement === "inventory" ? "success" : "primary"}>
+              {lead.requirement}
+            </Chip>
+          ) : (
+            "—"
+          );
 
-      case "requirement":
-        return (
-          <Chip size="sm" color={lead.requirement === "inventory" ? "success" : "primary"}>
-            {lead.requirement}
-          </Chip>
-        );
-
-      case "status":
-        return (
-          <Chip
-            size="sm"
-            color={
-              lead.status === "NEW"
-                ? "warning"
-                : lead.status === "CONTACTED"
-                  ? "primary"
-                  : lead.status === "CLOSED"
-                    ? "success"
-                    : "default"
-            }
-          >
-            {lead.status}
-          </Chip>
-        );
-
-      case "createdAt":
-        return new Date(lead.createdAt).toLocaleDateString();
-
-      case "actions": // ✅ ADD THIS
-        return (
-          <Dropdown>
-            <DropdownTrigger>
-              <Button isIconOnly size="sm" variant="light">
-                <VerticalDotsIcon />
-              </Button>
-            </DropdownTrigger>
-            <DropdownMenu aria-label="Lead Actions">
-              <DropdownItem
-                key="delete"
-                className="text-danger"
-                color="danger"
-                onClick={() => handleDeleteLead(lead.id)}
+        case "status": {
+          const currentStatus = lead.status || "NEW";
+          return (
+            <Dropdown>
+              <DropdownTrigger>
+                <Chip
+                  size="sm"
+                  className="cursor-pointer"
+                  color={leadStatusColorMap[currentStatus] ?? "default"}
+                >
+                  {currentStatus}
+                </Chip>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="Change Status"
+                onAction={(key) => handleLeadStatusChange(lead.id, key as string)}
               >
-                Delete
-              </DropdownItem>
-            </DropdownMenu>
-          </Dropdown>
-        );
+                {LEAD_STATUS_OPTIONS.map((status) => (
+                  <DropdownItem key={status}>{status}</DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          );
+        }
 
-      default:
-        return null;
-    }
-  }, []);
+        case "createdAt":
+          return lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : "—";
 
+        case "actions":
+          return (
+            <Dropdown>
+              <DropdownTrigger>
+                <Button isIconOnly size="sm" variant="light" onClick={(e) => e.stopPropagation()}>
+                  <VerticalDotsIcon />
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="Lead Actions"
+                onAction={(key) => {
+                  if (key === "email") handleSendEmail(lead);
+                  if (key === "delete") handleDeleteLead(lead.id);
+                }}
+              >
+                <DropdownItem key="email">Send Email</DropdownItem>
+                <DropdownItem key="delete" className="text-danger" color="danger">
+                  Delete Lead
+                </DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+          );
 
+        default:
+          return null;
+      }
+    },
+    [leads]
+  );
 
   /* ---------------- RENDER ---------------- */
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
-        <Spinner size="lg" />
+      <div className="flex justify-center items-center min-h-screen bg-gray-50">
+        <div className="flex flex-col items-center gap-3">
+          <Spinner size="lg" color="primary" />
+          <p className="text-sm text-gray-500 font-medium">Loading dashboard...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="p-6">
-      <Tabs aria-label="Options" color="primary" variant="underlined">
-        {/* STATIONS TAB */}
+    <div className="p-6 bg-gray-50 min-h-screen">
+      <Tabs aria-label="Dashboard Tabs" color="primary" variant="underlined">
+
+        {/* ===================== STATIONS TAB ===================== */}
         <Tab key="stations" title="Stations">
-          <div className="flex justify-between mt-6 mb-4 gap-4">
-            <Input
-              isClearable
-              className="w-1/3"
-              placeholder="Search by name or address..."
-              startContent={<SearchIcon />}
-              value={stationSearch}
-              onValueChange={(v) => {
-                setStationSearch(v ?? "");
-                setStationPage(1);
-              }}
-            />
-            <div className="flex gap-2 items-center">
-              <Dropdown>
-                <DropdownTrigger>
-                  <Button endContent={<ChevronDownIcon />} variant="flat">
-                    Lines: {selectedLines.size === lines.length ? "All" : selectedLines.size}
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  aria-label="Filter by lines"
-                  closeOnSelect={false}
-                  disallowEmptySelection
-                  selectedKeys={selectedLines}
-                  selectionMode="multiple"
-                  onSelectionChange={(keys) => {
-                    setSelectedLines(keys as Set<string>);
-                    setStationPage(1);
-                  }}
-                >
-                  {lines.map((line) => (
-                    <DropdownItem key={line.name}>{line.name}</DropdownItem>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-
-              <Button variant="flat" onClick={handleExportStations}>
-                Export Excel
-              </Button>
-
-              <Button variant="flat" color="primary" onClick={handleDownloadTemplate}>
-                Download Import Format
-              </Button>
-
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                id="stationImport"
-                style={{ display: "none" }}
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-
-                  console.log("Uploading file:", file);
-
-                  const formData = new FormData();
-                  formData.append("file", file);
-
-                  const res = await fetch("/api/stations/import", {
-                    method: "POST",
-                    body: formData,
-                  });
-
-                  const data = await res.json();
-
-                  alert(`Imported: ${data.success}, Failed: ${data.failed}`);
-
-                  location.reload();
+          <div className="bg-white p-6 rounded-2xl shadow-sm mt-4">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+              <Input
+                isClearable
+                className="w-full md:w-1/3"
+                placeholder="Search by name or address..."
+                startContent={<SearchIcon />}
+                value={stationSearch}
+                onValueChange={(v) => {
+                  setStationSearch(v ?? "");
+                  setStationPage(1);
                 }}
               />
+              <div className="flex flex-wrap gap-2 items-center justify-end">
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button endContent={<ChevronDownIcon />} variant="flat">
+                      Lines: {selectedLines.size === lines.length ? "All" : selectedLines.size}
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    aria-label="Filter by lines"
+                    closeOnSelect={false}
+                    disallowEmptySelection
+                    selectedKeys={selectedLines}
+                    selectionMode="multiple"
+                    onSelectionChange={(keys) => {
+                      setSelectedLines(keys as Set<string>);
+                      setStationPage(1);
+                    }}
+                  >
+                    {lines.map((line) => (
+                      <DropdownItem key={line.name}>{line.name}</DropdownItem>
+                    ))}
+                  </DropdownMenu>
+                </Dropdown>
 
-              <Button
-                color="secondary"
-                onClick={() => document.getElementById("stationImport")?.click()}
-              >
-                Import Excel
-              </Button>
-
-
-
-              <Link href="/cms/add">
-                <Button color="primary" endContent={<PlusIcon />}>
-                  Add Station
+                <Button variant="flat" onClick={handleExportStations}>
+                  Export Excel
                 </Button>
-              </Link>
+
+                <Button variant="flat" color="primary" onClick={handleDownloadTemplate}>
+                  Download Import Format
+                </Button>
+
+                <input
+                  type="file"
+                  accept=".xlsx, .xls"
+                  id="stationImport"
+                  style={{ display: "none" }}
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append("file", file);
+                    const res = await fetch("/api/stations/import", {
+                      method: "POST",
+                      body: formData,
+                    });
+                    const data = await res.json();
+                    alert(`Imported: ${data.success}, Failed: ${data.failed}`);
+                    location.reload();
+                  }}
+                />
+
+                <Button
+                  color="secondary"
+                  onClick={() => document.getElementById("stationImport")?.click()}
+                >
+                  Import Excel
+                </Button>
+
+                <Link href="/cms/add">
+                  <Button color="primary" endContent={<PlusIcon />}>
+                    Add Station
+                  </Button>
+                </Link>
+              </div>
             </div>
-          </div>
 
-          <Table
-            isStriped
-            bottomContent={
-              <Pagination
-                page={stationPage}
-                total={Math.ceil(filteredStations.length / rowsPerPage)}
-                onChange={setStationPage}
-                showControls
-              />
-            }
-          >
-            <TableHeader columns={stationColumns}>
-              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-            </TableHeader>
-            <TableBody
-              items={filteredStations.slice(
-                (stationPage - 1) * rowsPerPage,
-                stationPage * rowsPerPage
-              )}
+            <Table
+              isStriped
+              aria-label="Stations Table"
+              bottomContent={
+                <div className="flex justify-center">
+                  <Pagination
+                    page={stationPage}
+                    total={Math.max(1, Math.ceil(filteredStations.length / rowsPerPage))}
+                    onChange={setStationPage}
+                    showControls
+                  />
+                </div>
+              }
             >
-              {(item) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => (
-                    <TableCell>{renderStationCell(item, columnKey as string)}</TableCell>
-                  )}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              <TableHeader columns={stationColumns}>
+                {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+              </TableHeader>
+              <TableBody
+                items={filteredStations.slice(
+                  (stationPage - 1) * rowsPerPage,
+                  stationPage * rowsPerPage
+                )}
+                emptyContent="No stations found."
+              >
+                {(item) => (
+                  <TableRow key={item.id}>
+                    {(columnKey) => (
+                      <TableCell>{renderStationCell(item, columnKey as string)}</TableCell>
+                    )}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Tab>
 
-        {/* LINES TAB */}
+        {/* ===================== LINES TAB ===================== */}
         <Tab key="lines" title="Lines">
-          <div className="flex justify-between mt-6 mb-4">
-            <Input
-              isClearable
-              className="w-1/3"
-              placeholder="Search line..."
-              startContent={<SearchIcon />}
-              value={lineSearch}
-              onValueChange={(v) => {
-                setLineSearch(v ?? "");
-                setLinePage(1);
-              }}
-            />
-            <Button color="primary" endContent={<PlusIcon />} onClick={openAddLineModal}>
-              Add Line
-            </Button>
-          </div>
-
-          <Table
-            isStriped
-            bottomContent={
-              <Pagination
-                page={linePage}
-                total={Math.ceil(filteredLines.length / rowsPerPage)}
-                onChange={setLinePage}
-                showControls
+          <div className="bg-white p-6 rounded-2xl shadow-sm mt-4">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+              <Input
+                isClearable
+                className="w-full md:w-1/3"
+                placeholder="Search line..."
+                startContent={<SearchIcon />}
+                value={lineSearch}
+                onValueChange={(v) => {
+                  setLineSearch(v ?? "");
+                  setLinePage(1);
+                }}
               />
-            }
-          >
-            <TableHeader columns={lineColumns}>
-              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-            </TableHeader>
-            <TableBody
-              items={filteredLines.slice((linePage - 1) * rowsPerPage, linePage * rowsPerPage)}
+              <Button color="primary" endContent={<PlusIcon />} onClick={openAddLineModal}>
+                Add Line
+              </Button>
+            </div>
+
+            <Table
+              isStriped
+              aria-label="Lines Table"
+              bottomContent={
+                <div className="flex justify-center">
+                  <Pagination
+                    page={linePage}
+                    total={Math.max(1, Math.ceil(filteredLines.length / rowsPerPage))}
+                    onChange={setLinePage}
+                    showControls
+                  />
+                </div>
+              }
             >
-              {(item) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => <TableCell>{renderLineCell(item, columnKey as string)}</TableCell>}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              <TableHeader columns={lineColumns}>
+                {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+              </TableHeader>
+              <TableBody
+                items={filteredLines.slice((linePage - 1) * rowsPerPage, linePage * rowsPerPage)}
+                emptyContent="No lines found."
+              >
+                {(item) => (
+                  <TableRow key={item.id}>
+                    {(columnKey) => (
+                      <TableCell>{renderLineCell(item, columnKey as string)}</TableCell>
+                    )}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Tab>
 
-        {/* PRODUCTS TAB */}
+        {/* ===================== PRODUCTS TAB ===================== */}
         <Tab key="products" title="Products">
-          <div className="flex justify-between mt-6 mb-4">
-            <Input
-              isClearable
-              className="w-1/3"
-              placeholder="Search product..."
-              startContent={<SearchIcon />}
-              value={productSearch}
-              onValueChange={(v) => {
-                setProductSearch(v ?? "");
-                setProductPage(1);
-              }}
-            />
-            <Button color="primary" endContent={<PlusIcon />} onClick={openAddProductModal}>
-              Add Product
-            </Button>
-          </div>
-
-          <Table
-            isStriped
-            bottomContent={
-              <Pagination
-                page={productPage}
-                total={Math.ceil(filteredProducts.length / rowsPerPage)}
-                onChange={setProductPage}
-                showControls
+          <div className="bg-white p-6 rounded-2xl shadow-sm mt-4">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+              <Input
+                isClearable
+                className="w-full md:w-1/3"
+                placeholder="Search product..."
+                startContent={<SearchIcon />}
+                value={productSearch}
+                onValueChange={(v) => {
+                  setProductSearch(v ?? "");
+                  setProductPage(1);
+                }}
               />
-            }
-          >
-            <TableHeader columns={productColumns}>
-              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-            </TableHeader>
-            <TableBody
-              items={filteredProducts.slice(
-                (productPage - 1) * rowsPerPage,
-                productPage * rowsPerPage
-              )}
+              <Button color="primary" endContent={<PlusIcon />} onClick={openAddProductModal}>
+                Add Product
+              </Button>
+            </div>
+
+            <Table
+              isStriped
+              aria-label="Products Table"
+              bottomContent={
+                <div className="flex justify-center">
+                  <Pagination
+                    page={productPage}
+                    total={Math.max(1, Math.ceil(filteredProducts.length / rowsPerPage))}
+                    onChange={setProductPage}
+                    showControls
+                  />
+                </div>
+              }
             >
-              {(item) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => (
-                    <TableCell>{renderProductCell(item, columnKey as string)}</TableCell>
-                  )}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              <TableHeader columns={productColumns}>
+                {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+              </TableHeader>
+              <TableBody
+                items={filteredProducts.slice(
+                  (productPage - 1) * rowsPerPage,
+                  productPage * rowsPerPage
+                )}
+                emptyContent="No products found."
+              >
+                {(item) => (
+                  <TableRow key={item.id}>
+                    {(columnKey) => (
+                      <TableCell>{renderProductCell(item, columnKey as string)}</TableCell>
+                    )}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Tab>
 
-        {/* AUDIENCES TAB */}
+        {/* ===================== AUDIENCES TAB ===================== */}
         <Tab key="audiences" title="Station Audiences">
-          <div className="flex justify-between mt-6 mb-4">
-            <Input
-              isClearable
-              className="w-1/3"
-              placeholder="Search audience..."
-              startContent={<SearchIcon />}
-              value={audienceSearch}
-              onValueChange={(v) => {
-                setAudienceSearch(v ?? "");
-                setAudiencePage(1);
-              }}
-            />
-            <Button color="primary" endContent={<PlusIcon />} onClick={openAddAudienceModal}>
-              Add Audience
-            </Button>
-          </div>
-
-          <Table
-            isStriped
-            bottomContent={
-              <Pagination
-                page={audiencePage}
-                total={Math.ceil(filteredAudiences.length / rowsPerPage)}
-                onChange={setAudiencePage}
-                showControls
+          <div className="bg-white p-6 rounded-2xl shadow-sm mt-4">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+              <Input
+                isClearable
+                className="w-full md:w-1/3"
+                placeholder="Search audience..."
+                startContent={<SearchIcon />}
+                value={audienceSearch}
+                onValueChange={(v) => {
+                  setAudienceSearch(v ?? "");
+                  setAudiencePage(1);
+                }}
               />
-            }
-          >
-            <TableHeader columns={simpleColumns}>
-              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-            </TableHeader>
-            <TableBody
-              items={filteredAudiences.slice(
-                (audiencePage - 1) * rowsPerPage,
-                audiencePage * rowsPerPage
-              )}
+              <Button color="primary" endContent={<PlusIcon />} onClick={openAddAudienceModal}>
+                Add Audience
+              </Button>
+            </div>
+
+            <Table
+              isStriped
+              aria-label="Audiences Table"
+              bottomContent={
+                <div className="flex justify-center">
+                  <Pagination
+                    page={audiencePage}
+                    total={Math.max(1, Math.ceil(filteredAudiences.length / rowsPerPage))}
+                    onChange={setAudiencePage}
+                    showControls
+                  />
+                </div>
+              }
             >
-              {(item) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => (
-                    <TableCell>{renderSimpleCell(item, columnKey as any, "audiences")}</TableCell>
-                  )}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              <TableHeader columns={simpleColumns}>
+                {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+              </TableHeader>
+              <TableBody
+                items={filteredAudiences.slice(
+                  (audiencePage - 1) * rowsPerPage,
+                  audiencePage * rowsPerPage
+                )}
+                emptyContent="No audiences found."
+              >
+                {(item) => (
+                  <TableRow key={item.id}>
+                    {(columnKey) => (
+                      <TableCell>
+                        {renderSimpleCell(item, columnKey as string, "audiences")}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Tab>
 
-        {/* TYPES TAB */}
+        {/* ===================== TYPES TAB ===================== */}
         <Tab key="types" title="Station Types">
-          <div className="flex justify-between mt-6 mb-4">
-            <Input
-              isClearable
-              className="w-1/3"
-              placeholder="Search type..."
-              startContent={<SearchIcon />}
-              value={typeSearch}
-              onValueChange={(v) => {
-                setTypeSearch(v ?? "");
-                setTypePage(1);
-              }}
-            />
-            <Button color="primary" endContent={<PlusIcon />} onClick={openAddTypeModal}>
-              Add Type
-            </Button>
-          </div>
-
-          <Table
-            isStriped
-            bottomContent={
-              <Pagination
-                page={typePage}
-                total={Math.ceil(filteredTypes.length / rowsPerPage)}
-                onChange={setTypePage}
-                showControls
+          <div className="bg-white p-6 rounded-2xl shadow-sm mt-4">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+              <Input
+                isClearable
+                className="w-full md:w-1/3"
+                placeholder="Search type..."
+                startContent={<SearchIcon />}
+                value={typeSearch}
+                onValueChange={(v) => {
+                  setTypeSearch(v ?? "");
+                  setTypePage(1);
+                }}
               />
-            }
-          >
-            <TableHeader columns={simpleColumns}>
-              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-            </TableHeader>
-            <TableBody
-              items={filteredTypes.slice((typePage - 1) * rowsPerPage, typePage * rowsPerPage)}
+              <Button color="primary" endContent={<PlusIcon />} onClick={openAddTypeModal}>
+                Add Type
+              </Button>
+            </div>
+
+            <Table
+              isStriped
+              aria-label="Types Table"
+              bottomContent={
+                <div className="flex justify-center">
+                  <Pagination
+                    page={typePage}
+                    total={Math.max(1, Math.ceil(filteredTypes.length / rowsPerPage))}
+                    onChange={setTypePage}
+                    showControls
+                  />
+                </div>
+              }
             >
-              {(item) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => (
-                    <TableCell>{renderSimpleCell(item, columnKey as any, "types")}</TableCell>
-                  )}
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+              <TableHeader columns={simpleColumns}>
+                {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+              </TableHeader>
+              <TableBody
+                items={filteredTypes.slice((typePage - 1) * rowsPerPage, typePage * rowsPerPage)}
+                emptyContent="No types found."
+              >
+                {(item) => (
+                  <TableRow key={item.id}>
+                    {(columnKey) => (
+                      <TableCell>
+                        {renderSimpleCell(item, columnKey as string, "types")}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Tab>
 
+        {/* ===================== LEADS TAB ===================== */}
         <Tab key="leads" title="Leads">
-          <div className="flex justify-between mt-6 mb-4">
-            <Input
-              isClearable
-              className="w-1/3"
-              placeholder="Search leads..."
-              startContent={<SearchIcon />}
-              value={leadSearch}
-              onValueChange={(v) => {
-                setLeadSearch(v ?? "");
-                setLeadPage(1);
-              }}
-            />
-          </div>
-
-          <Table
-            isStriped
-            bottomContent={
-              <Pagination
-                page={leadPage}
-                total={Math.ceil(filteredLeads.length / rowsPerPage)}
-                onChange={setLeadPage}
-                showControls
+          <div className="bg-white p-6 rounded-2xl shadow-sm mt-4">
+            <div className="flex flex-col md:flex-row justify-between mb-4 gap-3">
+              <Input
+                isClearable
+                className="w-full md:w-1/3"
+                placeholder="Search leads by name, company or email..."
+                startContent={<SearchIcon />}
+                value={leadSearch}
+                onValueChange={(v) => {
+                  setLeadSearch(v ?? "");
+                  setLeadPage(1);
+                }}
               />
-            }
-          >
-            <TableHeader columns={leadColumns}>
-              {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
-            </TableHeader>
-            <TableBody
-              items={filteredLeads
-                .slice(
-                  (leadPage - 1) * rowsPerPage,
-                  leadPage * rowsPerPage
-                )
-                .map((item, index) => ({
-                  ...item,
-                  serialNumber: (leadPage - 1) * rowsPerPage + index + 1,
-                }))}
+            </div>
+
+            <Table
+              isStriped
+              aria-label="Leads Table"
+              bottomContent={
+                <div className="flex justify-center">
+                  <Pagination
+                    page={leadPage}
+                    total={Math.max(1, Math.ceil(filteredLeads.length / rowsPerPage))}
+                    onChange={setLeadPage}
+                    showControls
+                  />
+                </div>
+              }
             >
-              {(item) => (
-                <TableRow key={item.id}>
-                  {(columnKey) => (
-                    <TableCell>
-                      {columnKey === "id"
-                        ? (item as any).serialNumber // ✅ use computed serial
-                        : renderLeadCell(item, columnKey as string)}
-                    </TableCell>
-                  )}
-                </TableRow>
-              )}
-            </TableBody>
-
-          </Table>
+              <TableHeader columns={leadColumns}>
+                {(col) => <TableColumn key={col.uid}>{col.name}</TableColumn>}
+              </TableHeader>
+              <TableBody
+                items={filteredLeads
+                  .slice((leadPage - 1) * rowsPerPage, leadPage * rowsPerPage)
+                  .map((item, index) => ({
+                    ...item,
+                    serialNumber: (leadPage - 1) * rowsPerPage + index + 1,
+                  }))}
+                emptyContent="No leads found."
+              >
+                {(item) => (
+                  <TableRow
+                    key={item.id}
+                    onClick={() => setSelectedLead(item)}
+                    className="cursor-pointer hover:bg-default-100 transition"
+                  >
+                    {(columnKey) => (
+                      <TableCell>
+                        {columnKey === "id"
+                          ? (item as any).serialNumber
+                          : renderLeadCell(item, columnKey as string)}
+                      </TableCell>
+                    )}
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </Tab>
-
-
       </Tabs>
 
-      {/* ---------------- LINE MODAL ---------------- */}
+      {/* ===================== LEAD DETAIL PANEL ===================== */}
+      {selectedLead && (
+        <div className="fixed inset-0 bg-black/40 z-50 flex justify-end">
+          <div className="w-full max-w-md bg-white h-full p-6 shadow-2xl overflow-y-auto">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">Lead Details</h2>
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                onClick={() => setSelectedLead(null)}
+              >
+                ✕
+              </Button>
+            </div>
+
+            <div className="space-y-4 text-sm">
+              <div className="flex flex-col gap-1 border-b pb-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Full Name</span>
+                <span className="font-medium">{selectedLead.name ?? "—"}</span>
+              </div>
+              <div className="flex flex-col gap-1 border-b pb-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Company</span>
+                <span className="font-medium">{selectedLead.companyName ?? "—"}</span>
+              </div>
+              <div className="flex flex-col gap-1 border-b pb-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Email</span>
+                <a
+                  href={`mailto:${selectedLead.email}`}
+                  className="font-medium text-blue-600 hover:underline"
+                >
+                  {selectedLead.email ?? "—"}
+                </a>
+              </div>
+              <div className="flex flex-col gap-1 border-b pb-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Phone</span>
+                <span className="font-medium">{selectedLead.phone ?? "—"}</span>
+              </div>
+              <div className="flex flex-col gap-1 border-b pb-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Requirement</span>
+                <span className="font-medium capitalize">{selectedLead.requirement ?? "—"}</span>
+              </div>
+              <div className="flex flex-col gap-1 border-b pb-3">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Status</span>
+                <Chip
+                  size="sm"
+                  color={leadStatusColorMap[selectedLead.status || "NEW"] ?? "default"}
+                >
+                  {selectedLead.status || "NEW"}
+                </Chip>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-gray-400 uppercase tracking-wide">Created At</span>
+                <span className="font-medium">
+                  {selectedLead.createdAt
+                    ? new Date(selectedLead.createdAt).toLocaleString()
+                    : "—"}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-2 mt-8">
+              <Button
+                color="primary"
+                variant="flat"
+                className="flex-1"
+                onClick={() => handleSendEmail(selectedLead)}
+              >
+                Send Email
+              </Button>
+              <Button
+                color="danger"
+                variant="light"
+                className="flex-1"
+                onClick={() => setSelectedLead(null)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ===================== LINE MODAL ===================== */}
       {isLineModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[420px]">
+          <div className="bg-white rounded-2xl p-6 w-[420px] shadow-xl">
             <h2 className="text-lg font-semibold mb-4">
               {editingLine ? "Edit Line" : "Add New Line"}
             </h2>
@@ -1352,7 +1479,7 @@ export default function StationsPage() {
               <input
                 value={lineFormData.name}
                 onChange={(e) => setLineFormData({ ...lineFormData, name: e.target.value })}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Enter line name"
               />
             </div>
@@ -1362,7 +1489,7 @@ export default function StationsPage() {
               <input
                 value={lineFormData.color}
                 onChange={(e) => setLineFormData({ ...lineFormData, color: e.target.value })}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="#00FF00 or green"
               />
             </div>
@@ -1379,10 +1506,10 @@ export default function StationsPage() {
         </div>
       )}
 
-      {/* ---------------- PRODUCT MODAL ---------------- */}
+      {/* ===================== PRODUCT MODAL ===================== */}
       {isProductModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[460px]">
+          <div className="bg-white rounded-2xl p-6 w-[460px] shadow-xl">
             <h2 className="text-lg font-semibold mb-4">
               {editingProduct ? "Edit Product" : "Add New Product"}
             </h2>
@@ -1392,7 +1519,7 @@ export default function StationsPage() {
               <input
                 value={productFormData.name}
                 onChange={(e) => setProductFormData({ ...productFormData, name: e.target.value })}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="Enter product name"
               />
             </div>
@@ -1404,7 +1531,7 @@ export default function StationsPage() {
                 onChange={(e) =>
                   setProductFormData({ ...productFormData, thumbnail: e.target.value })
                 }
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="https://..."
               />
             </div>
@@ -1417,7 +1544,7 @@ export default function StationsPage() {
                 onChange={(e) =>
                   setProductFormData({ ...productFormData, rateMonth: e.target.value })
                 }
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="45000"
               />
             </div>
@@ -1430,7 +1557,7 @@ export default function StationsPage() {
                 onChange={(e) =>
                   setProductFormData({ ...productFormData, rateDay: e.target.value })
                 }
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="1500"
               />
             </div>
@@ -1447,10 +1574,10 @@ export default function StationsPage() {
         </div>
       )}
 
-      {/* ---------------- AUDIENCE MODAL ---------------- */}
+      {/* ===================== AUDIENCE MODAL ===================== */}
       {isAudienceModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[420px]">
+          <div className="bg-white rounded-2xl p-6 w-[420px] shadow-xl">
             <h2 className="text-lg font-semibold mb-4">
               {editingAudience ? "Edit Audience" : "Add New Audience"}
             </h2>
@@ -1460,7 +1587,7 @@ export default function StationsPage() {
               <input
                 value={audienceFormData.name}
                 onChange={(e) => setAudienceFormData({ name: e.target.value })}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g. Students, Business, Shoppers"
               />
             </div>
@@ -1481,10 +1608,10 @@ export default function StationsPage() {
         </div>
       )}
 
-      {/* ---------------- TYPE MODAL ---------------- */}
+      {/* ===================== TYPE MODAL ===================== */}
       {isTypeModalOpen && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-[420px]">
+          <div className="bg-white rounded-2xl p-6 w-[420px] shadow-xl">
             <h2 className="text-lg font-semibold mb-4">
               {editingType ? "Edit Station Type" : "Add New Station Type"}
             </h2>
@@ -1494,7 +1621,7 @@ export default function StationsPage() {
               <input
                 value={typeFormData.name}
                 onChange={(e) => setTypeFormData({ name: e.target.value })}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary"
                 placeholder="e.g. Interchange, Terminal, Underground"
               />
             </div>

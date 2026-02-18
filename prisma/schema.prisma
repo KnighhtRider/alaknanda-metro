@@ -155,9 +155,9 @@ model ContactUsSubmission {
   id            Int      @id @default(autoincrement())
 
   // core
-  requirement   String   // advertise | inventory
-  buyerType     String?  // brand | agency (nullable for inventory)
-  familiarity   String?  // know | help (nullable for inventory)
+  requirement   String
+  buyerType     String?
+  familiarity   String?
 
   // company & contact
   companyName   String
@@ -172,7 +172,7 @@ model ContactUsSubmission {
   mediaKitType  String?
 
   // aware flow
-  stations      Json?    // ["Rajiv Chowk", "Saket"]
+  stations      Json?
   adFormat      String?
   budget        String?
 
@@ -180,6 +180,8 @@ model ContactUsSubmission {
   goal          String?
   audience      String?
   timeline      String?
+
+  status        String   @default("NEW")   // ← ADD THIS
 
   createdAt     DateTime @default(now())
 }

@@ -2,9 +2,11 @@
 import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { Accordion, AccordionItem, Spinner } from "@heroui/react";
+import { useSearchParams } from "next/navigation";
 
 export default function AdInventoryListing() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [filters, setFilters] = useState<{
     line: string[];
@@ -26,6 +28,29 @@ export default function AdInventoryListing() {
   const [audiences, setAudiences] = useState<string[]>([]);
   const [types, setTypes] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+
+  useEffect(() => {
+    const line = searchParams.get("line");
+    const inventory = searchParams.get("inventory");
+  
+    if (line) {
+      const cleanLine = line.replace(" Line", "").trim();
+      setFilters((prev) => ({
+        ...prev,
+        line: [cleanLine],
+      }));
+    }
+  
+    if (inventory) {
+      setFilters((prev) => ({
+        ...prev,
+        inventory: [inventory],
+      }));
+    }
+  }, [searchParams]);
+  
+  
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,7 +107,9 @@ export default function AdInventoryListing() {
   const filteredStations = stations.filter((s) => {
     if (filters.line.length > 0) {
       const hasLine = filters.line.some((l) =>
-        s.lines.some((sl: any) => sl.name === l)
+        s.lines.some(
+          (sl: any) => sl.name.toLowerCase() === l.toLowerCase()
+        )
       );
       if (!hasLine) return false;
     }

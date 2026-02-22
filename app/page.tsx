@@ -1,78 +1,47 @@
-"use client";
+import { prisma } from "@/lib/prisma";
+import Link from "next/link";
 
-import { useEffect, useState } from "react";
-import { Spinner, Skeleton } from "@heroui/react";
+export const metadata = {
+  title: "Delhi Metro Advertising | Reach Millions of Commuters",
+  description:
+    "Advertise on Delhi Metro stations. Browse inventory, view pricing, and get a free consultation for your next metro advertising campaign.",
+};
 
-interface Station {
-  id: number;
-  name: string;
-  line?: string;
-  image?: string;
-  price?: string;
-}
+export default async function HomePage() {
+  // ✅ Direct DB query — only top 3 stations, only what we need
+  const rawStations = await prisma.station.findMany({
+    take: 3,
+    orderBy: { id: "asc" },
+    select: {
+      id: true,
+      name: true,
+      images: { select: { imageUrl: true }, take: 1 },
+      lines: {
+        select: { line: { select: { name: true } } },
+        take: 1,
+      },
+      products: {
+        select: {
+          rateMonth: true,
+          product: { select: { defaultRateMonth: true } },
+        },
+      },
+    },
+  });
 
-export default function HomePage() {
-  const [stations, setStations] = useState<Station[]>([]);
-  const [loading, setLoading] = useState(true);
+  const stations = rawStations.map((s) => {
+    const lineName = s.lines[0]?.line?.name ?? "N/A";
+    const image =
+      s.images[0]?.imageUrl ??
+      `https://source.unsplash.com/1200x800/?${encodeURIComponent(s.name)},metro`;
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [stationsRes, linesRes, productsRes] = await Promise.all([
-          fetch("/api/stations"),
-          fetch("/api/lines"),
-          fetch("/api/products"),
-        ]);
+    const rates = s.products
+      .map((p) => p.rateMonth ?? p.product.defaultRateMonth ?? 0)
+      .filter((r) => r > 0);
+    const price = rates.length > 0 ? `₹${Math.min(...rates).toLocaleString()}` : "₹—";
 
-        const [stationsData, linesData, productsData] = await Promise.all([
-          stationsRes.json(),
-          linesRes.json(),
-          productsRes.json(),
-        ]);
-
-        // ✅ Build featured station cards dynamically
-        const featured = stationsData.slice(0, 3).map((s: any) => {
-          const lineName =
-            s.line?.name ||
-            linesData.find((l: any) => l.id === s.lineId)?.name ||
-            "N/A";
-
-          const price = s.products?.length
-            ? `₹${Math.min(
-                ...s.products.map((p: any) => p.rateMonth || 0)
-              ).toLocaleString()}`
-            : "₹—";
-
-          return {
-            id: s.id,
-            name: s.name,
-            line: lineName,
-            image:
-              s.images?.[0] ||
-              `https://source.unsplash.com/1200x800/?${encodeURIComponent(
-                s.name
-              )},metro`,
-            price,
-          };
-        });
-
-        setStations(featured);
-      } catch (error) {
-        console.error("Error fetching homepage data:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  if (loading)
-    return (
-      <div className="flex justify-center items-center h-screen text-lg text-gray-600">
-        <Spinner size="lg" color="danger" variant="gradient" />
-      </div>
-    );
+    return { id: s.id, name: s.name, line: lineName, image, price };
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 text-gray-900">
@@ -95,18 +64,18 @@ export default function HomePage() {
                 a quote in minutes.
               </p>
               <div className="mt-6 flex gap-3 items-center">
-                <a
+                <Link
                   href="/catalogue"
                   className="bg-red-600 text-white px-5 py-3 rounded-lg font-medium"
                 >
                   Browse Inventory
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/contact"
                   className="border border-white text-white px-5 py-3 rounded-lg font-medium"
                 >
                   Get Free Consultation
-                </a>
+                </Link>
               </div>
             </div>
           </div>
@@ -132,7 +101,7 @@ export default function HomePage() {
             <div>
               <div className="text-4xl font-bold text-red-600">390+ km</div>
               <div className="text-gray-800 font-medium mt-1">
-                India’s Largest Metro Network
+                India's Largest Metro Network
               </div>
             </div>
           </div>
@@ -146,15 +115,15 @@ export default function HomePage() {
             <h3 className="text-lg font-semibold">
               Explore Top Metro Stations for Advertising
             </h3>
-            <a href="/catalogue" className="text-sm text-red-600">
+            <Link href="/catalogue" className="text-sm text-red-600">
               View all
-            </a>
+            </Link>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {stations.length > 0 ? (
               stations.map((f) => (
-                <a
+                <Link
                   key={f.id}
                   href={`/station/${f.id}`}
                   className="block bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition"
@@ -173,7 +142,7 @@ export default function HomePage() {
                       <span className="font-semibold">{f.price}</span>
                     </div>
                   </div>
-                </a>
+                </Link>
               ))
             ) : (
               <p className="text-gray-600">No featured stations available.</p>
@@ -229,25 +198,25 @@ export default function HomePage() {
         {/* CTA */}
         <section
           id="get-quote"
-          className="max-w-7xl mx-auto px-6 mt-8 mb-10 animate-pulse hover:animate-none transition"
+          className="max-w-7xl mx-auto px-6 mt-8 mb-10 hover:animate-none transition"
         >
           <div className="bg-red-600 text-white rounded-lg p-8 flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="text-xl font-semibold">
               Ready to Plan Your Next Metro Campaign?
             </div>
             <div className="flex gap-3">
-              <a
+              <Link
                 href="/contact"
                 className="bg-white text-red-600 px-5 py-3 rounded-lg font-medium hover:bg-gray-100 transition"
               >
                 Get Free Consultation
-              </a>
-              <a
+              </Link>
+              <Link
                 href="/catalogue"
                 className="border border-white px-5 py-3 rounded-lg font-medium hover:bg-white hover:text-red-600 transition"
               >
                 Browse Inventory
-              </a>
+              </Link>
             </div>
           </div>
         </section>

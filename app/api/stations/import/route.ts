@@ -38,34 +38,34 @@ export async function POST(req: Request) {
 
         const lineIds = row.lineIds
           ? String(row.lineIds)
-              .split(",")
-              .map((n: string) => Number(n.trim()))
+            .split(",")
+            .map((n: string) => Number(n.trim()))
           : [];
 
         const audienceIds = row.audienceIds
           ? String(row.audienceIds)
-              .split(",")
-              .map((n: string) => Number(n.trim()))
+            .split(",")
+            .map((n: string) => Number(n.trim()))
           : [];
 
         const typeIds = row.typeIds
           ? String(row.typeIds)
-              .split(",")
-              .map((n: string) => Number(n.trim()))
+            .split(",")
+            .map((n: string) => Number(n.trim()))
           : [];
 
         // products format => productId:units:rateMonth:rateDay
         const products = row.products
           ? String(row.products).split(",").map((p: string) => {
-              const [productId, units, rateMonth, rateDay] = p.split(":");
+            const [productId, units, rateMonth, rateDay] = p.split(":");
 
-              return {
-                productId: Number(productId),
-                units: units ? Number(units) : null,
-                rateMonth: rateMonth ? Number(rateMonth) : null,
-                rateDay: rateDay ? Number(rateDay) : null,
-              };
-            })
+            return {
+              productId: Number(productId),
+              units: units ? Number(units) : null,
+              rateMonth: rateMonth ? Number(rateMonth) : null,
+              rateDay: rateDay ? Number(rateDay) : null,
+            };
+          })
           : [];
 
         // ---------------- CREATE STATION ----------------

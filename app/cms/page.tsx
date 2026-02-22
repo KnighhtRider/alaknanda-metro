@@ -287,23 +287,6 @@ export default function StationsPage() {
     }
   };
 
-  const handleImportStations = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const formData = new FormData();
-    formData.append("file", file);
-    const res = await fetch("/api/stations/import", {
-      method: "POST",
-      body: formData,
-    });
-    if (res.ok) {
-      alert("Stations imported successfully");
-      fetchStations();
-    } else {
-      alert("Import failed");
-    }
-  };
-
   useEffect(() => {
     Promise.all([
       fetch("/api/stations").then((res) => res.json()),

@@ -271,7 +271,7 @@ export default function EditStationPage() {
         try {
           const data = await res.json();
           errorMessage = data.message || errorMessage;
-        } catch (e) {
+        } catch (_e) {
           // If JSON parsing fails, use status text
           errorMessage = `Error ${res.status}: ${res.statusText}`;
         }
@@ -279,7 +279,7 @@ export default function EditStationPage() {
         return;
       }
 
-      const data = await res.json();
+      await res.json();
       alert("Station updated successfully!");
       window.location.href = "/cms";
     } catch (error) {
@@ -380,18 +380,18 @@ export default function EditStationPage() {
 
         {/* Footfall */}
         <Input
-  label="Footfall (daily)"
-  placeholder="e.g., ~5,20,000 riders/day"
-  variant="bordered"
-  radius="md"
-  value={form.footfall}
-  isInvalid={!!errors.footfall}
-  errorMessage={errors.footfall}
-  onValueChange={(value) => updateField("footfall", value)}
-  labelPlacement="outside"
-  type="text"   // ✅ changed
-  isRequired
-/>
+          label="Footfall (daily)"
+          placeholder="e.g., ~5,20,000 riders/day"
+          variant="bordered"
+          radius="md"
+          value={form.footfall}
+          isInvalid={!!errors.footfall}
+          errorMessage={errors.footfall}
+          onValueChange={(value) => updateField("footfall", value)}
+          labelPlacement="outside"
+          type="text"   // ✅ changed
+          isRequired
+        />
 
 
         {/* Images */}

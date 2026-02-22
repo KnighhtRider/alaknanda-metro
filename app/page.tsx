@@ -101,7 +101,7 @@ export default async function HomePage() {
             <div>
               <div className="text-4xl font-bold text-red-600">390+ km</div>
               <div className="text-gray-800 font-medium mt-1">
-                India's Largest Metro Network
+                India&apos;s Largest Metro Network
               </div>
             </div>
           </div>

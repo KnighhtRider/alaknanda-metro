@@ -37,6 +37,7 @@ export const StationPdf = ({ station, product }: any) => (
         </Text>
       </View>
 
+      {/* eslint-disable-next-line jsx-a11y/alt-text */}
       {product.thumbnail && (
         <Image src={product.thumbnail} style={styles.image} />
       )}

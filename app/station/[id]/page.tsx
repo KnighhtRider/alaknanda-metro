@@ -1,4 +1,4 @@
-import type { Metadata, ResolvingMetadata } from 'next'
+import type { Metadata } from 'next'
 import { prisma } from "@/lib/prisma"
 import StationClient from "./StationClient"
 
@@ -8,7 +8,6 @@ type Props = {
 
 export async function generateMetadata(
   props: Props,
-  parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { id } = await props.params;
   const stationId = parseInt(id, 10);

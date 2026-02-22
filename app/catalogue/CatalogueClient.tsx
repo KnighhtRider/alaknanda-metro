@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect, Suspense } from "react";
 import { Accordion, AccordionItem, Spinner } from "@heroui/react";
 import { useSearchParams } from "next/navigation";
+import Image from "next/image";
 
 /* ============================================================
    Inner component — uses useSearchParams (must be inside Suspense)
@@ -285,10 +286,13 @@ function AdInventoryListingInner() {
                                 >
                                     {/* Image + overlay badges */}
                                     <div className="relative">
-                                        <img
+                                        <Image
                                             src={s.images?.[0]?.imageUrl}
                                             alt={s.name}
+                                            width={400}
+                                            height={176}
                                             className="w-full h-44 object-cover"
+                                            unoptimized
                                         />
 
                                         {/* Audiences – bottom left */}

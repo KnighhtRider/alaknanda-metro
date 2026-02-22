@@ -1,5 +1,6 @@
 'use client'
 import Link from "next/link";
+import Image from "next/image";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import { Spinner } from "@heroui/react";
@@ -62,7 +63,7 @@ function Carousel({ images, onOpen }: { images: string[]; onOpen: (src: string) 
                         className="shrink-0 w-full h-64 md:h-96 snap-start relative bg-gray-100 overflow-hidden"
                         aria-label={`Open slide ${i + 1} in lightbox`}
                     >
-                        <img src={src} alt={`Slide ${i + 1}`} className="w-full h-full object-cover" />
+                        <Image src={src} alt={`Slide ${i + 1}`} fill className="object-cover" unoptimized />
                     </button>
                 ))}
             </div>
@@ -100,7 +101,7 @@ function Carousel({ images, onOpen }: { images: string[]; onOpen: (src: string) 
     );
 }
 
-function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
+function InlineToast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
     return (
         <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-lg shadow-md text-white z-50 
       ${type === "success" ? "bg-green-500" : "bg-red-500"}`}>
@@ -446,7 +447,7 @@ export default function AdOptionDetail() {
             {lightbox && (
                 <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
                     <div className="max-w-5xl w-full">
-                        <img src={lightbox} alt="enlarged" className="w-full h-auto rounded-lg" />
+                        <Image src={lightbox} alt="enlarged" width={1200} height={800} className="w-full h-auto rounded-lg" unoptimized />
                     </div>
                 </div>
             )}

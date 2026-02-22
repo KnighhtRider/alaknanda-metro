@@ -169,7 +169,7 @@ export default function ContactClient() {
             setToast({ message: "Request submitted successfully! ✅", type: "success" });
             // Reset form
             setRequirement(""); setCompanyName(""); setName(""); setPhone(""); setEmail(""); setNotes(""); setStations([]); setErrors({});
-        } catch (err) {
+        } catch (_err) {
             setToast({ message: "Error submitting form. Please try again. ❌", type: "error" });
         } finally {
             setSubmitting(false);

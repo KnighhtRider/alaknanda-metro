@@ -15,7 +15,7 @@ export async function DELETE(req: Request) {
     await prisma.station.delete({ where: { id } });
 
     return NextResponse.json({ message: "Station deleted" });
-  } catch (e) {
+  } catch (_e) {
     return NextResponse.json({ error: "Failed to delete" }, { status: 500 });
   }
 }

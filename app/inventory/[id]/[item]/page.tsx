@@ -8,7 +8,6 @@ type Props = {
 
 export async function generateMetadata(
   props: Props,
-  parent: ResolvingMetadata
 ): Promise<Metadata> {
   const { id, item } = await props.params;
   const stationId = parseInt(id, 10);

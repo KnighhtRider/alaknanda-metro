@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import Link from "next/link";
+import Image from "next/image";
 import { Spinner } from "@heroui/react";
 
 // Native Toast Component
@@ -154,10 +155,13 @@ export default function StationClient() {
 
                     {/* Compact Station Card */}
                     <div className="flex items-center gap-4 bg-white rounded-xl shadow-sm p-3">
-                        <img
+                        <Image
                             src={station.images?.[0]}
                             alt={station.name}
+                            width={192}
+                            height={96}
                             className="w-48 h-24 object-cover rounded-md"
+                            unoptimized
                         />
                         <div className="flex-1">
                             <div className="flex items-center justify-between">
@@ -189,10 +193,13 @@ export default function StationClient() {
                                     onClick={() => handleProductClick(p.id)}
                                     className="bg-white rounded-xl overflow-hidden transform transition duration-200 hover:scale-105 hover:shadow-xl cursor-pointer focus:outline-none"
                                 >
-                                    <img
+                                    <Image
                                         src={p.thumbnail}
                                         alt={p.name}
+                                        width={400}
+                                        height={128}
                                         className="w-full h-32 object-cover"
+                                        unoptimized
                                     />
                                     <div className="p-4">
                                         <div className="text-xl font-bold text-gray-900 mb-1">

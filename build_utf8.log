@@ -1,0 +1,156 @@
+﻿
+> rohan-next-app@0.1.0 build
+> next build --turbopack
+
+   Ôû▓ Next.js 15.5.9 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ Ô£ô Finished writing to disk in 331ms
+ Ô£ô Compiled successfully in 27.3s
+   Linting and checking validity of types ...
+node.exe : 
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~
+    + CategoryInfo          : N  
+  otSpecified: (:String) [],     
+RemoteException
+    + FullyQualifiedErrorId : N  
+  ativeCommandError
+ 
+Failed to compile.
+
+./app/api/stations/delete/route.t
+s
+18:12  Warning: '_e' is defined 
+but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/cms/edit/[id]/page.tsx
+274:18  Warning: '_e' is defined 
+but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/cms/page.tsx
+728:6  Warning: React Hook 
+useCallback has a missing 
+dependency: 
+'handleDeleteStation'. Either 
+include it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+770:6  Warning: React Hook 
+useCallback has a missing 
+dependency: 'handleDeleteLine'. 
+Either include it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+778:11  Warning: Using `<img>` 
+could result in slower LCP and 
+higher bandwidth. Consider using 
+`<Image />` from `next/image` or 
+a custom image loader to 
+automatically optimize images. 
+This may incur additional usage 
+or cost from your provider. See: 
+https://nextjs.org/docs/messages/
+no-img-element  
+@next/next/no-img-element
+818:6  Warning: React Hook 
+useCallback has a missing 
+dependency: 
+'handleDeleteProduct'. Either 
+include it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+861:5  Warning: React Hook 
+useCallback has missing 
+dependencies: 
+'handleDeleteAudience' and 
+'handleDeleteType'. Either 
+include them or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+946:5  Warning: React Hook 
+useCallback has missing 
+dependencies: 'handleDeleteLead' 
+and 'handleLeadStatusChange'. 
+Either include them or remove 
+the dependency array.  
+react-hooks/exhaustive-deps
+
+./app/contact/ContactClient.tsx
+276:18  Warning: '_err' is 
+defined but never used.  
+@typescript-eslint/no-unused-vars
+403:115  Error: `'` can be 
+escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+
+./app/inventory/[id]/[item]/Inven
+toryClient.tsx
+136:10  Warning: 'InlineToast' 
+is defined but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/inventory/[id]/[item]/page.
+tsx
+1:25  Warning: 
+'ResolvingMetadata' is defined 
+but never used.  
+@typescript-eslint/no-unused-vars
+
+./app/station/[id]/StationClient.
+tsx
+164:11  Warning: 
+'handleProductClick' is assigned 
+a value but never used.  
+@typescript-eslint/no-unused-vars
+210:8  Warning: React Hook 
+useCallback has a missing 
+dependency: 
+'currentStationPlans'. Either 
+include it or remove the 
+dependency array.  
+react-hooks/exhaustive-deps
+
+./components/PopupContact.tsx
+238:18  Warning: '_err' is 
+defined but never used.  
+@typescript-eslint/no-unused-vars
+306:111  Error: `'` can be 
+escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+356:94  Error: `'` can be 
+escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+364:94  Error: `'` can be 
+escaped with `&apos;`, 
+`&lsquo;`, `&#39;`, `&rsquo;`.  
+react/no-unescaped-entities
+
+./lib/pdf/generateStationPdf.tsx
+40:8  Warning: Unused 
+eslint-disable directive (no 
+problems were reported from 
+'jsx-a11y/alt-text').
+42:9  Warning: Image elements 
+must have an alt prop, either 
+with meaningful text, or an 
+empty string for decorative 
+images.  jsx-a11y/alt-text
+
+info  - Need to disable some 
+ESLint rules? Learn more here: ht
+tps://nextjs.org/docs/app/api-ref
+erence/config/eslint#disabling-ru
+les

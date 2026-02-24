@@ -53,17 +53,18 @@ export async function GET(
       footfall: station.footfall,
       totalInventory: station.totalInventory,
 
-      // ✅ FIX 1: images as string[]
+      // images as string[]
       images: station.images.map((img) => img.imageUrl),
 
-      // ✅ FIX 2: return line IDs (not names)
+      // IDs (for CMS / backward compat)
       lines: station.lines.map((sl) => sl.line.id),
-
-      // ✅ FIX 3: return audience IDs
       audiences: station.audiences.map((sa) => sa.audience.id),
-
-      // ✅ FIX 4: return type IDs
       types: station.types.map((st) => st.type.id),
+
+      // Names (for auto-generated description)
+      lineNames: station.lines.map((sl) => sl.line.name),
+      audienceNames: station.audiences.map((sa) => sa.audience.name),
+      typeNames: station.types.map((st) => st.type.name),
 
       products: station.products.map((sp) => ({
         id: sp.product.id,

@@ -1,0 +1,42 @@
+
+> rohan-next-app@0.1.0 build
+> next build --turbopack
+
+   ▲ Next.js 15.5.9 (Turbopack)
+   - Environments: .env
+
+   Creating an optimized production build ...
+ ✓ Finished writing to disk in 256ms
+ ✓ Compiled successfully in 28.2s
+   Linting and checking validity of types ...
+
+Failed to compile.
+
+./app/api/stations/delete/route.ts
+18:12  Warning: '_e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/cms/edit/[id]/page.tsx
+274:18  Warning: '_e' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/cms/page.tsx
+728:6  Warning: React Hook useCallback has a missing dependency: 'handleDeleteStation'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+770:6  Warning: React Hook useCallback has a missing dependency: 'handleDeleteLine'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+778:11  Warning: Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+818:6  Warning: React Hook useCallback has a missing dependency: 'handleDeleteProduct'. Either include it or remove the dependency array.  react-hooks/exhaustive-deps
+861:5  Warning: React Hook useCallback has missing dependencies: 'handleDeleteAudience' and 'handleDeleteType'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+946:5  Warning: React Hook useCallback has missing dependencies: 'handleDeleteLead' and 'handleLeadStatusChange'. Either include them or remove the dependency array.  react-hooks/exhaustive-deps
+
+./app/contact/ContactClient.tsx
+403:115  Error: `'` can be escaped with `&apos;`, `&lsquo;`, `&#39;`, `&rsquo;`.  react/no-unescaped-entities
+
+./app/inventory/[id]/[item]/InventoryClient.tsx
+136:10  Warning: 'InlineToast' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./app/inventory/[id]/[item]/page.tsx
+1:25  Warning: 'ResolvingMetadata' is defined but never used.  @typescript-eslint/no-unused-vars
+
+./lib/pdf/generateStationPdf.tsx
+40:8  Warning: Unused eslint-disable directive (no problems were reported from 'jsx-a11y/alt-text').
+42:9  Warning: Image elements must have an alt prop, either with meaningful text, or an empty string for decorative images.  jsx-a11y/alt-text
+
+info  - Need to disable some ESLint rules? Learn more here: https://nextjs.org/docs/app/api-reference/config/eslint#disabling-rules

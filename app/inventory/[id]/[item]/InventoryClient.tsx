@@ -3,7 +3,39 @@ import Link from "next/link";
 import Image from "next/image";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from 'next/navigation';
-import { Spinner } from "@heroui/react";
+import { Spinner, Skeleton } from "@heroui/react";
+import { ChevronDown, Target } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { toSlug } from "@/lib/slugify";
+
+function AccordionItem({ q, a }: { q: string, a: string }) {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+        <div className="border border-gray-100 rounded-xl mb-3 overflow-hidden bg-white shadow-sm transition-shadow hover:shadow-md">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full text-left px-5 py-4 flex justify-between items-center bg-white cursor-pointer"
+            >
+                <span className="font-medium text-gray-900">{q}</span>
+                <ChevronDown className={`w-5 h-5 text-gray-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                    >
+                        <div className="px-5 pb-4 text-sm text-gray-700 bg-gray-50/50">
+                            {a}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+}
 
 // --- Utilities ---
 function _clampIndex(i: number, len: number) {
@@ -63,7 +95,7 @@ function Carousel({ images, onOpen }: { images: string[]; onOpen: (src: string) 
                         className="shrink-0 w-full h-64 md:h-96 snap-start relative bg-gray-100 overflow-hidden"
                         aria-label={`Open slide ${i + 1} in lightbox`}
                     >
-                        <Image src={src} alt={`Slide ${i + 1}`} fill className="object-cover" unoptimized />
+                        <Image src={src} alt={`Slide ${i + 1}`} fill className="object-cover" priority={i === 0} sizes="(max-width: 768px) 100vw, 66vw" />
                     </button>
                 ))}
             </div>
@@ -111,12 +143,20 @@ function InlineToast({ message, type, onClose }: { message: string; type: "succe
     );
 }
 
-export default function AdOptionDetail() {
+export default function AdOptionDetail({
+    initialStationId,
+    initialProductId
+}: {
+    initialStationId?: number;
+    initialProductId?: number;
+} = {}) {
     const params = useParams();
     const router = useRouter();
 
-    const stationId = Number(params.id);
-    const productId = Number(params.item);
+    const rawStationId = Array.isArray(params.id) ? params.id[0] : params.id;
+    const rawProductId = Array.isArray(params.item) ? params.item[0] : params.item;
+    const stationId = initialStationId || (rawStationId ? parseInt(rawStationId, 10) : NaN);
+    const productId = initialProductId || (rawProductId ? parseInt(rawProductId, 10) : NaN);
 
     const [station, setStation] = useState<any>(null);
     const [product, setProduct] = useState<any>(null);
@@ -199,8 +239,21 @@ export default function AdOptionDetail() {
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen text-gray-600">
-                <Spinner size="lg" color="danger" variant="gradient" />
+            <div className="min-h-screen bg-gray-50 text-gray-900 py-6">
+                <div className="max-w-7xl mx-auto px-6 grid grid-cols-12 gap-6">
+                    <section className="col-span-12 lg:col-span-8 space-y-6">
+                        <Skeleton className="rounded-2xl h-32 w-full" />
+                        <Skeleton className="rounded-2xl h-96 w-full" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <Skeleton className="rounded-2xl h-48 w-full" />
+                            <Skeleton className="rounded-2xl h-48 w-full" />
+                        </div>
+                        <Skeleton className="rounded-2xl h-64 w-full" />
+                    </section>
+                    <aside className="col-span-12 lg:col-span-4 space-y-4 hidden lg:block">
+                        <Skeleton className="rounded-2xl h-[600px] w-full" />
+                    </aside>
+                </div>
             </div>
         );
     }
@@ -219,7 +272,7 @@ export default function AdOptionDetail() {
         station: {
             id: station.id,
             name: station.name,
-            line: station.lines?.[0] || "Metro Line",
+            line: station.lineNames?.[0] || "Metro Line",
             lineColorClass: "bg-yellow-400",
             tags: ["Popular", "High Footfall"],
             footfall: station.footfall || "High footfall",
@@ -259,7 +312,7 @@ export default function AdOptionDetail() {
         <div className="min-h-screen bg-gray-50 text-gray-900">
             {/* Breadcrumb */}
             <div className="max-w-7xl mx-auto px-6 pt-6 text-sm text-gray-500">
-                <Link href="/">Home</Link> › <Link href="/catalogue">Catalogue</Link> › <Link href={`/station/${ad.station.id}`}>{ad.station.name}</Link> › <span className="text-gray-800">{ad.type}</span>
+                <Link href="/">Home</Link> › <Link href="/catalogue">Catalogue</Link> › <Link href={`/stations/${toSlug(ad.station.name)}`}>{ad.station.name}</Link> › <span className="text-gray-800">{ad.type}</span>
             </div>
 
             <main className="max-w-7xl mx-auto px-6 py-6 grid grid-cols-12 gap-6">
@@ -312,7 +365,7 @@ export default function AdOptionDetail() {
                             </ul>
                         </details>
 
-                        <details className="bg-white rounded-2xl shadow-sm p-5">
+                        <details open className="bg-white rounded-2xl shadow-sm p-5">
                             <summary className="cursor-pointer font-semibold">Guidelines</summary>
                             <div className="text-sm text-gray-700 mt-3">
                                 <ul className="list-disc pl-5 mt-1 space-y-1">
@@ -326,16 +379,34 @@ export default function AdOptionDetail() {
                     </div>
 
                     {/* FAQs */}
-                    <div className="mt-6 bg-white rounded-2xl shadow-sm p-5">
-                        <h3 className="font-semibold mb-3">FAQs</h3>
-                        <div className="divide-y">
+                    <div className="mt-6 bg-white rounded-2xl shadow-sm p-6">
+                        <h3 className="text-lg font-semibold mb-4">Frequently Asked Questions</h3>
+                        <div className="space-y-1">
                             {ad.faqs.map((f, i) => (
-                                <details key={i} className="py-3">
-                                    <summary className="cursor-pointer font-medium text-gray-900">{f.q}</summary>
-                                    <p className="mt-2 text-sm text-gray-700">{f.a}</p>
-                                </details>
+                                <AccordionItem key={i} q={f.q} a={f.a} />
                             ))}
                         </div>
+                    </div>
+
+                    {/* CTA Box */}
+                    <div className="mt-8 bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-8 flex flex-col md:flex-row items-center justify-between gap-6 shadow-sm border border-red-100 mb-8">
+                        <div className="flex items-center gap-4">
+                            <div className="bg-white p-3 rounded-full shadow-sm">
+                                <Target className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg md:text-xl font-semibold text-gray-900">
+                                    Need help identifying the right mix of stations?
+                                </h3>
+                                <p className="text-sm text-gray-600 mt-1">Our specialists can plan the best placements for your goals.</p>
+                            </div>
+                        </div>
+                        <button
+                            className="bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700 hover:scale-105 transition-all font-medium whitespace-nowrap shadow-sm cursor-pointer"
+                            onClick={() => router.push("/contact")}
+                        >
+                            Consult Our Media Planners
+                        </button>
                     </div>
                 </section>
 
@@ -447,7 +518,7 @@ export default function AdOptionDetail() {
             {lightbox && (
                 <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4" onClick={() => setLightbox(null)}>
                     <div className="max-w-5xl w-full">
-                        <Image src={lightbox} alt="enlarged" width={1200} height={800} className="w-full h-auto rounded-lg" unoptimized />
+                        <Image src={lightbox} alt="enlarged" width={1200} height={800} className="w-full h-auto rounded-lg" sizes="100vw" />
                     </div>
                 </div>
             )}

@@ -28,6 +28,7 @@ import {
   PlusIcon,
 } from "@/components/Icons";
 import Link from "next/link";
+import { toSlug } from "@/lib/slugify";
 
 /* ---------------- TYPES ---------------- */
 
@@ -694,7 +695,7 @@ export default function StationsPage() {
       case "actions":
         return (
           <div className="flex items-center gap-2">
-            <Link href={`/station/${station.id}`}>
+            <Link href={`/stations/${toSlug(station.name)}`}>
               <Button size="sm" color="primary" variant="light">
                 View
               </Button>

@@ -15,6 +15,10 @@ interface PlanContextType {
     removeFromPlan: (stationId: number, inventoryId: number) => void
     clearPlan: () => void
     isInPlan: (stationId: number, inventoryId: number) => boolean
+    isPlanOpen: boolean
+    setIsPlanOpen: (open: boolean) => void
+    userDetails: { name: string, company: string, email: string, phone: string }
+    setUserDetails: (details: { name: string, company: string, email: string, phone: string }) => void
 }
 
 const PlanContext = createContext<PlanContextType | undefined>(undefined)
@@ -24,13 +28,19 @@ const STORAGE_KEY = 'alaknanda_selected_plans'
 export function PlanProvider({ children }: { children: React.ReactNode }) {
     const [selectedPlans, setSelectedPlans] = useState<PlanItem[]>([])
     const [hydrated, setHydrated] = useState(false)
+    const [isPlanOpen, setIsPlanOpen] = useState(false)
+    const [userDetails, setUserDetails] = useState({ name: '', company: '', email: '', phone: '' })
 
     // Hydrate from localStorage on mount
     useEffect(() => {
         try {
             const stored = localStorage.getItem(STORAGE_KEY)
             if (stored) {
-                setSelectedPlans(JSON.parse(stored))
+                const parsed = JSON.parse(stored)
+                setSelectedPlans(parsed.plans || [])
+                if (parsed.user) {
+                    setUserDetails(parsed.user)
+                }
             }
         } catch {
             // ignore parse errors
@@ -41,9 +51,9 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     // Persist to localStorage on every change (after hydration)
     useEffect(() => {
         if (hydrated) {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(selectedPlans))
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ plans: selectedPlans, user: userDetails }))
         }
-    }, [selectedPlans, hydrated])
+    }, [selectedPlans, userDetails, hydrated])
 
     const addToPlan = useCallback((item: PlanItem) => {
         setSelectedPlans(prev => {
@@ -65,7 +75,17 @@ export function PlanProvider({ children }: { children: React.ReactNode }) {
     }, [selectedPlans])
 
     return (
-        <PlanContext.Provider value={{ selectedPlans, addToPlan, removeFromPlan, clearPlan, isInPlan }}>
+        <PlanContext.Provider value={{
+            selectedPlans,
+            addToPlan,
+            removeFromPlan,
+            clearPlan,
+            isInPlan,
+            isPlanOpen,
+            setIsPlanOpen,
+            userDetails,
+            setUserDetails
+        }}>
             {children}
         </PlanContext.Provider>
     )

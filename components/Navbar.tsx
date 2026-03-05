@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { usePlan } from "@/context/PlanContext";
+import { ShoppingCart } from "lucide-react";
 
 interface SearchItem {
   id: number;
@@ -11,6 +13,7 @@ interface SearchItem {
 
 export default function Navbar() {
   const router = useRouter();
+  const { selectedPlans, setIsPlanOpen } = usePlan();
 
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchItem[]>([]);
@@ -115,12 +118,25 @@ export default function Navbar() {
         </div>
 
         {/* CTA */}
-        <div className="flex items-center order-2 md:order-3 shrink-0">
+        <div className="flex items-center gap-3 order-2 md:order-3 shrink-0">
+          <button
+            onClick={() => setIsPlanOpen(true)}
+            className="relative flex items-center justify-center p-2 text-gray-700 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+          >
+            <ShoppingCart className="w-6 h-6" />
+            {selectedPlans.length > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full min-w-4 text-center">
+                {selectedPlans.length}
+              </span>
+            )}
+            <span className="hidden sm:inline-block font-medium ml-2 text-sm">Plan</span>
+          </button>
+
           <a
             href="/contact"
-            className="inline-block bg-red-600 text-white font-medium px-3 md:px-4 py-2 text-sm md:text-base rounded-lg shadow-sm"
+            className="hidden sm:inline-block bg-red-600 text-white font-medium px-3 md:px-4 py-2 text-sm md:text-base rounded-lg shadow-sm"
           >
-            Contact Us
+            Contact
           </a>
         </div>
 

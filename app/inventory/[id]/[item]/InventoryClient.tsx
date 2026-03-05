@@ -4,9 +4,10 @@ import Image from "next/image";
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useParams, useRouter } from 'next/navigation';
 import { Spinner, Skeleton } from "@heroui/react";
-import { ChevronDown, Target } from "lucide-react";
+import { ChevronDown, Target, Plus, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toSlug } from "@/lib/slugify";
+import { usePlan } from "@/context/PlanContext";
 
 function AccordionItem({ q, a }: { q: string, a: string }) {
     const [isOpen, setIsOpen] = useState(false);
@@ -162,59 +163,11 @@ export default function AdOptionDetail({
     const [product, setProduct] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [lightbox, setLightbox] = useState<string | null>(null);
-    const [submitting, setSubmitting] = useState(false);
-    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
-    // ✅ Validation States
-    const [formData, setFormData] = useState({
-        name: "",
-        company: "",
-        email: "",
-        phone: "",
-        notes: "",
-    });
-    const [errors, setErrors] = useState<any>({});
+    const { isInPlan, addToPlan, removeFromPlan, setIsPlanOpen } = usePlan();
+    const inPlan = isInPlan(stationId, productId);
 
-    // ✅ input change with phone filter
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        if (name === "phone") {
-            const onlyNums = value.replace(/\D/g, "");
-            if (onlyNums.length <= 10) {
-                setFormData((prev) => ({ ...prev, phone: onlyNums }));
-            }
-            return;
-        }
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    };
 
-    // ✅ validation logic
-    const validateForm = () => {
-        const newErrors: any = {};
-        if (!formData.name.trim()) newErrors.name = "Name is required";
-        if (!formData.company.trim()) newErrors.company = "Company is required";
-        if (!formData.email) {
-            newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = "Invalid email";
-        }
-        if (!formData.phone) {
-            newErrors.phone = "Phone is required";
-        } else if (formData.phone.length !== 10) {
-            newErrors.phone = "Must be 10 digits";
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    // ✅ Auto-hide toast after 3 seconds
-    useEffect(() => {
-        if (!toast) return;
-        const timer = setTimeout(() => {
-            setToast(null);
-        }, 3000);
-        return () => clearTimeout(timer);
-    }, [toast]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -414,95 +367,44 @@ export default function AdOptionDetail({
                 <aside className="col-span-12 lg:col-span-4">
                     <div className="sticky top-24 space-y-4">
                         <div className="bg-white rounded-2xl shadow-sm p-6" style={{ boxShadow: "0 2px 8px rgba(0,0,0,0.05)" }}>
-                            <h4 className="font-semibold mb-1">Get Rates for {ad.type}</h4>
-                            <div className="text-xs text-gray-500 mb-4">Station: {ad.station.name}</div>
-                            <form
-                                className="space-y-3"
-                                onSubmit={async (e) => {
-                                    e.preventDefault();
-                                    if (submitting) return;
+                            <h4 className="font-semibold mb-1">Add to Plan</h4>
+                            <div className="text-xs text-gray-500 mb-4">{ad.station.name} - {ad.type}</div>
 
-                                    // ✅ Validate before submission
-                                    if (!validateForm()) return;
-
-                                    setSubmitting(true);
-
-                                    const payload = {
-                                        ...formData,
-                                        companyName: formData.company, // Aligning with your API naming
-                                        stationId,
-                                        productId,
-                                    };
-
-                                    try {
-                                        const res = await fetch("/api/leads", {
-                                            method: "POST",
-                                            headers: { "Content-Type": "application/json" },
-                                            body: JSON.stringify(payload),
-                                        });
-
-                                        if (!res.ok) throw new Error("Server error");
-
-                                        setToast({
-                                            message: "Lead submitted successfully ✅",
-                                            type: "success"
-                                        });
-
-                                        // Reset form state
-                                        setFormData({ name: "", company: "", email: "", phone: "", notes: "" });
-                                        setErrors({});
-
-                                    } catch (err) {
-                                        console.error(err);
-                                        setToast({
-                                            message: "Something went wrong ❌",
-                                            type: "error"
-                                        });
-                                    } finally {
-                                        setSubmitting(false);
-                                    }
-                                }}
-                            >
-                                <div>
-                                    <input name="name" value={formData.name} onChange={handleChange} placeholder="Name" className={`w-full border rounded-lg px-3 py-2 ${errors.name ? 'border-red-500' : 'border-gray-200'}`} />
-                                    {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.name}</p>}
+                            {inPlan ? (
+                                <div className="space-y-3">
+                                    <button
+                                        className="w-full rounded-lg py-3 font-medium flex items-center justify-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 transition border border-green-200 cursor-pointer shadow-sm"
+                                        onClick={() => setIsPlanOpen(true)}
+                                    >
+                                        <Check className="w-5 h-5" /> Added to Plan
+                                    </button>
+                                    <button
+                                        className="w-full text-sm font-medium text-gray-500 hover:text-red-600 transition cursor-pointer"
+                                        onClick={() => removeFromPlan(stationId, productId)}
+                                    >
+                                        Remove from plan
+                                    </button>
                                 </div>
-
-                                <div>
-                                    <input name="company" value={formData.company} onChange={handleChange} placeholder="Company" className={`w-full border rounded-lg px-3 py-2 ${errors.company ? 'border-red-500' : 'border-gray-200'}`} />
-                                    {errors.company && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.company}</p>}
-                                </div>
-
-                                <div>
-                                    <input name="email" value={formData.email} onChange={handleChange} placeholder="Email" className={`w-full border rounded-lg px-3 py-2 ${errors.email ? 'border-red-500' : 'border-gray-200'}`} />
-                                    {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.email}</p>}
-                                </div>
-
-                                <div>
-                                    <input name="phone" value={formData.phone} onChange={handleChange} placeholder="Phone" className={`w-full border rounded-lg px-3 py-2 ${errors.phone ? 'border-red-500' : 'border-gray-200'}`} />
-                                    {errors.phone && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.phone}</p>}
-                                </div>
-
-                                <textarea name="notes" value={formData.notes} onChange={handleChange} placeholder="Campaign details (dates, quantity, target audience)" className="w-full border border-gray-200 rounded-lg px-3 py-2 h-24" />
-
+                            ) : (
                                 <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className={`w-full rounded-lg py-3 font-medium flex items-center justify-center gap-2 
-                    ${submitting ? "bg-red-400 cursor-not-allowed" : "bg-red-600 hover:bg-red-700"} 
-                    text-white transition`}
+                                    className="w-full rounded-lg py-3 font-medium flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white transition shadow-sm cursor-pointer"
+                                    onClick={() => {
+                                        addToPlan({
+                                            stationId,
+                                            stationName: ad.station.name,
+                                            inventoryId: productId,
+                                            inventoryName: ad.type,
+                                            price: ad.summary.startingDay
+                                        });
+                                        // Option to open drawer immediately:
+                                        setIsPlanOpen(true);
+                                    }}
                                 >
-                                    {submitting ? (
-                                        <>
-                                            <Spinner size="sm" color="white" />
-                                            Submitting...
-                                        </>
-                                    ) : (
-                                        "Request Quote"
-                                    )}
+                                    <Plus className="w-5 h-5" /> Add to Plan
                                 </button>
-                                <p className="text-xs text-gray-500 mt-4">We will share the detailed inventory PDF and rates on email.</p>
-                            </form>
+                            )}
+
+                            <p className="text-xs text-gray-500 mt-4 text-center">Add multiple ad formats to your plan and request a combined quote.</p>
                         </div>
 
                         <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-2xl shadow-sm p-5 cursor-pointer hover:bg-yellow-100 transition" onClick={() => router.push('/contact')}>

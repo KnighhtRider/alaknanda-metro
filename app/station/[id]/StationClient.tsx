@@ -7,16 +7,7 @@ import { Spinner, Skeleton } from "@heroui/react";
 import { usePlan } from "@/context/PlanContext";
 import { toSlug } from "@/lib/slugify";
 
-// ─── Toast ────────────────────────────────────────────────────
-function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
-    return (
-        <div className={`fixed bottom-4 left-1/2 -translate-x-1/2 px-5 py-3 rounded-lg shadow-md text-white z-50 
-      ${type === "success" ? "bg-green-500" : "bg-red-500"}`}>
-            {message}
-            <button className="ml-3 font-bold" onClick={onClose}>×</button>
-        </div>
-    );
-}
+
 
 // ─── Description Generator Helpers ────────────────────────────
 
@@ -80,72 +71,13 @@ export default function StationClient({ initialStationId }: { initialStationId?:
     const rawId = Array.isArray(params.id) ? params.id[0] : params.id;
     const stationId = initialStationId || (rawId ? parseInt(rawId, 10) : NaN);
 
-    const { selectedPlans, addToPlan, removeFromPlan, isInPlan } = usePlan();
+    const { selectedPlans, addToPlan, removeFromPlan, isInPlan, setIsPlanOpen } = usePlan();
     const currentStationPlans = useMemo(() => selectedPlans.filter((p: any) => p.stationId === stationId), [selectedPlans, stationId]);
 
     const [station, setStation] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
-    // Form States
-    const [submitting, setSubmitting] = useState(false);
-    const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
-    const [formData, setFormData] = useState({
-        name: "",
-        company: "",
-        email: "",
-        phone: "",
-    });
-    const [errors, setErrors] = useState<any>({});
-    const [formHighlight, setFormHighlight] = useState(false);
 
-    // Scroll to lead form + flash highlight
-    const scrollToForm = useCallback(() => {
-        document.getElementById('lead-form')?.scrollIntoView({
-            behavior: 'smooth',
-            block: 'start',
-        });
-        setFormHighlight(true);
-        setTimeout(() => setFormHighlight(false), 2000);
-    }, []);
-
-    // input change logic
-    const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        if (name === "phone") {
-            const onlyNums = value.replace(/\D/g, "");
-            if (onlyNums.length <= 10) {
-                setFormData((prev) => ({ ...prev, phone: onlyNums }));
-            }
-            return;
-        }
-        setFormData((prev) => ({ ...prev, [name]: value }));
-    }, []);
-
-    // validation logic
-    const validateForm = useCallback(() => {
-        const newErrors: any = {};
-        if (!formData.name.trim()) newErrors.name = "Name is required";
-        if (!formData.company.trim()) newErrors.company = "Company is required";
-        if (!formData.email) {
-            newErrors.email = "Email is required";
-        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-            newErrors.email = "Invalid email";
-        }
-        if (!formData.phone) {
-            newErrors.phone = "Phone is required";
-        } else if (formData.phone.length !== 10) {
-            newErrors.phone = "Must be 10 digits";
-        }
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    }, [formData]);
-
-    // Auto-hide toast
-    useEffect(() => {
-        if (!toast) return;
-        const timer = setTimeout(() => setToast(null), 3000);
-        return () => clearTimeout(timer);
-    }, [toast]);
 
     useEffect(() => {
         const fetchStation = async () => {
@@ -173,38 +105,11 @@ export default function StationClient({ initialStationId }: { initialStationId?:
                 inventoryName: product.name,
                 price: product.rateDay || product.defaultRateDay || null,
             });
+            setIsPlanOpen(true);
         }
-    }, [isInPlan, removeFromPlan, addToPlan, stationId, station]);
+    }, [isInPlan, removeFromPlan, addToPlan, setIsPlanOpen, stationId, station]);
 
-    // Submit Logic
-    const handleSubmit = useCallback(async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!validateForm() || submitting) return;
 
-        setSubmitting(true);
-        try {
-            const res = await fetch("/api/leads", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...formData,
-                    companyName: formData.company,
-                    stationId: stationId,
-                    selectedInventory: currentStationPlans.length > 0 ? currentStationPlans : undefined,
-                }),
-            });
-
-            if (!res.ok) throw new Error("Server error");
-
-            setToast({ message: "Request submitted successfully ✅", type: "success" });
-            setFormData({ name: "", company: "", email: "", phone: "" });
-            setErrors({});
-        } catch {
-            setToast({ message: "Failed to submit request ❌", type: "error" });
-        } finally {
-            setSubmitting(false);
-        }
-    }, [validateForm, submitting, formData, stationId, currentStationPlans]);
 
     // Auto-generated description
     const autoDescription = useMemo(() => {
@@ -389,131 +294,39 @@ export default function StationClient({ initialStationId }: { initialStationId?:
                     </div>
                 </section>
 
-                {/* ── Sidebar ────────────────────────────────── */}
                 <aside className="col-span-12 lg:col-span-4">
                     <div className="sticky top-24 space-y-4">
-                        <div
-                            id="lead-form"
-                            className={`bg-white rounded-2xl border shadow-md p-6 transition-all duration-500 ${formHighlight
-                                ? 'ring-2 ring-red-500 border-red-300'
-                                : 'border-gray-200'
-                                }`}
-                        >
-                            <h4 className="font-semibold mb-2">
-                                Interested in advertising at {station.name}?
-                            </h4>
+                        <div className="bg-yellow-50 border border-yellow-300 text-yellow-800 rounded-2xl shadow-sm p-6 cursor-pointer hover:bg-yellow-100 transition" onClick={() => router.push('/contact')}>
+                            <h4 className="font-semibold text-lg mb-2">Need a Custom Plan?</h4>
+                            <p className="text-sm text-gray-700 mb-4 leading-relaxed">
+                                Not sure which stations or formats work best for your brand? Get a free consultation with our media specialists.
+                            </p>
+                            <button className="bg-yellow-500 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-yellow-600 shadow-sm">
+                                Get Free Consultation
+                            </button>
+                        </div>
 
-                            {/* Selected inventory summary */}
-                            {currentStationPlans.length > 0 && (
-                                <div className="mb-4 bg-red-50 border border-red-100 rounded-lg p-3">
-                                    <p className="text-xs font-semibold text-red-700 mb-1.5">Your selected ad formats:</p>
-                                    <ul className="space-y-1">
-                                        {currentStationPlans.map((item: any) => (
-                                            <li key={item.inventoryId} className="text-xs text-gray-700 flex justify-between">
-                                                <span>• {item.inventoryName}</span>
-                                                {item.price && (
-                                                    <span className="font-medium">₹{item.price.toLocaleString()}</span>
-                                                )}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removeFromPlan(item.stationId, item.inventoryId)}
-                                                    className="text-red-500 hover:text-red-700 ml-2"
-                                                >
-                                                    &times;
-                                                </button>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            )}
-
-                            <form className="space-y-3" onSubmit={handleSubmit}>
-                                <input
-                                    type="hidden"
-                                    name="selected_inventory"
-                                    value={JSON.stringify(currentStationPlans)}
-                                />
-                                <div>
-                                    <input
-                                        name="name"
-                                        value={formData.name}
-                                        onChange={handleChange}
-                                        placeholder="Name"
-                                        className={`w-full border rounded-lg px-3 py-3.5 ${errors.name ? 'border-red-500' : 'border-gray-200'}`}
-                                    />
-                                    {errors.name && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.name}</p>}
-                                </div>
-
-                                <div>
-                                    <input
-                                        name="company"
-                                        value={formData.company}
-                                        onChange={handleChange}
-                                        placeholder="Company"
-                                        className={`w-full border rounded-lg px-3 py-3.5 ${errors.company ? 'border-red-500' : 'border-gray-200'}`}
-                                    />
-                                    {errors.company && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.company}</p>}
-                                </div>
-
-                                <div>
-                                    <input
-                                        name="email"
-                                        type="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        placeholder="Work Email"
-                                        className={`w-full border rounded-lg px-3 py-3.5 ${errors.email ? 'border-red-500' : 'border-gray-200'}`}
-                                    />
-                                    {errors.email && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.email}</p>}
-                                </div>
-
-                                <div>
-                                    <input
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        placeholder="Phone"
-                                        className={`w-full border rounded-lg px-3 py-3.5 ${errors.phone ? 'border-red-500' : 'border-gray-200'}`}
-                                    />
-                                    {errors.phone && <p className="text-red-500 text-[10px] mt-1 ml-1">{errors.phone}</p>}
-                                </div>
-
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className={`w-full rounded-lg py-3 font-medium flex items-center justify-center gap-2 text-white transition
-                    ${submitting ? 'bg-red-400 cursor-not-allowed' : 'bg-red-600 hover:bg-red-700'}`}
-                                >
-                                    {submitting ? (
-                                        <>
-                                            <Spinner size="sm" color="white" />
-                                            Submitting...
-                                        </>
-                                    ) : "Get Station Plan"}
-                                </button>
-                            </form>
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+                            <h4 className="font-semibold text-gray-900 mb-2">How it works</h4>
+                            <ul className="text-sm text-gray-600 space-y-3 mt-4">
+                                <li className="flex gap-3">
+                                    <span className="bg-red-50 text-red-600 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
+                                    <span>Add desired ad formats from this station to your plan.</span>
+                                </li>
+                                <li className="flex gap-3">
+                                    <span className="bg-red-50 text-red-600 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
+                                    <span>Review all selections in the &apos;Plan&apos; drawer and provide contact details.</span>
+                                </li>
+                                <li className="flex gap-3">
+                                    <span className="bg-red-50 text-red-600 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
+                                    <span>Our team sends you a detailed PDF media kit and final quote.</span>
+                                </li>
+                            </ul>
                         </div>
                     </div>
                 </aside>
             </main>
 
-            {/* ── Floating Sticky Selection Bar ───────────────── */}
-            {planCount > 0 && (
-                <div className="fixed bottom-0 left-0 w-full bg-white border-t shadow-md p-4 flex justify-between items-center z-50">
-                    <span className="text-sm font-medium text-gray-800">
-                        You have selected <strong>{planCount}</strong> {planCount === 1 ? 'option' : 'options'}
-                    </span>
-                    <button
-                        className="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition font-medium"
-                        onClick={scrollToForm}
-                    >
-                        Review &amp; Submit
-                    </button>
-                </div>
-            )}
-
-            {/* Toast Notification */}
-            {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
         </div>
     );
 }

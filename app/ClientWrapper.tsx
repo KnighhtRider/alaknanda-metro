@@ -5,6 +5,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { PlanProvider } from "@/context/PlanContext";
 import PopupContact from "@/components/PopupContact";
+import PlanDrawer from "@/components/PlanDrawer";
 
 export default function ClientWrapper({ children }: { children: React.ReactNode }) {
   const path = usePathname();
@@ -16,6 +17,7 @@ export default function ClientWrapper({ children }: { children: React.ReactNode 
       {children}
       {!isCMS && <Footer />}
       {!isCMS && <PopupContact />}
+      {!isCMS && <PlanDrawer />}
     </PlanProvider>
   );
 }
